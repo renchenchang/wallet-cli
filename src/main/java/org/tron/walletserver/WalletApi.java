@@ -128,6 +128,10 @@ public class WalletApi {
     return new GrpcClient(fullNode, solidityNode);
   }
 
+  public static Block getBlock4Loader(long number, boolean full) {
+    return rpcCli.getBlock4Loader(number, full);
+  }
+
   public static String selectFullNode() {
     Map<String, String> witnessMap = new HashMap<>();
     Config config = Configuration.getByPath("config.conf");

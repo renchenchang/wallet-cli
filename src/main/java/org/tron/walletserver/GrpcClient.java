@@ -413,6 +413,23 @@ public class GrpcClient {
     }
   }
 
+  public Block getBlock4Loader(long blockNum,boolean full) {
+    if (blockNum < 0) {
+      if (!full) {
+        return blockingStubSolidity.getNowBlock(EmptyMessage.newBuilder().build());
+      } else {
+        return blockingStubFull.getNowBlock(EmptyMessage.newBuilder().build());
+      }
+    }
+    NumberMessage.Builder builder = NumberMessage.newBuilder();
+    builder.setNum(blockNum);
+    if (!full) {
+      return blockingStubSolidity.getBlockByNum(builder.build());
+    } else {
+      return blockingStubFull.getBlockByNum(builder.build());
+    }
+  }
+
 //  public Optional<AccountList> listAccounts() {
 //    AccountList accountList = blockingStubSolidity
 //        .listAccounts(EmptyMessage.newBuilder().build());
