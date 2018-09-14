@@ -92,6 +92,10 @@ dependencies {
 //    compile "org.elasticsearch.client:transport:5.6.0"
 //    compile "org.apache.logging.log4j:log4j-core:2.11.1"
     compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.4.0'
+    compile 'org.apache.logging.log4j:log4j-core:2.11.1'
+    compile 'com.alibaba:fastjson:1.2.47'
+    compile files('/Users/renchengchang/libs/x-pack-sql-jdbc-6.4.0.jar')
+    compile files('/Users/renchengchang/libs/x-pack-core-6.4.0.jar')
 
 }
 
