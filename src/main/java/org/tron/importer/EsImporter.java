@@ -20,8 +20,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.protos.Protocol.Block;
@@ -98,13 +96,12 @@ public class EsImporter {
     SearchRequest searchRequest = new SearchRequest("tron");
     searchRequest.types("test");
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.sort(new FieldSortBuilder("number").order(SortOrder.DESC));
+  //  searchSourceBuilder.sort(new FieldSortBuilder("number").order(SortOrder.DESC));
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchRequest.source(searchSourceBuilder);
 
     SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
     for (SearchHit documentFields : searchResponse.getHits()) {
-
       System.out.println(documentFields.field("number").getName() );
     }
 
