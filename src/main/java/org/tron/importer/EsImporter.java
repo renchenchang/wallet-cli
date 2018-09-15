@@ -34,13 +34,10 @@ import org.tron.walletserver.WalletApi;
 
 public class EsImporter {
 
-  private static boolean busy = false;
-
   private static RestHighLevelClient client;
   private static Properties connectionProperties = new Properties();
   private static Connection dbConnection;
   private static BulkRequest blockBulk = new BulkRequest();
-
 
   static {
     try {
@@ -50,6 +47,8 @@ public class EsImporter {
           ));
       blockBulk.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
       blockBulk.setRefreshPolicy("wait_for");
+      blockBulk.timeout(TimeValue.timeValueMinutes(2));
+      blockBulk.timeout("2m");
       dbConnection = DriverManager
           .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
     } catch (SQLException e) {
@@ -95,7 +94,8 @@ public class EsImporter {
               .toHexString(block.getBlockHeader().getRawData().getParentHash().toByteArray()));
       builder.field("date_created", block.getBlockHeader().getRawData().getTimestamp());
       builder.field("trie",
-          WalletApi.encode58Check(block.getBlockHeader().getRawData().getTxTrieRoot().toByteArray()));
+          WalletApi
+              .encode58Check(block.getBlockHeader().getRawData().getTxTrieRoot().toByteArray()));
       builder.field("witness_id", block.getBlockHeader().getRawData().getWitnessId());
       builder.field("transactions", block.getTransactionsCount());
       builder.field("size", block.toByteArray().length);
@@ -103,7 +103,8 @@ public class EsImporter {
     }
     builder.endObject();
 
-    IndexRequest indexRequest = new IndexRequest("blocks", "blocks", getBlockID(block)).source(builder);
+    IndexRequest indexRequest = new IndexRequest("blocks", "blocks", getBlockID(block))
+        .source(builder);
     blockBulk.add(indexRequest);
     if (blockBulk.numberOfActions() >= 5000) {
       bulkSave();
@@ -116,49 +117,45 @@ public class EsImporter {
   }
 
   public static void loadDataFromNode() throws IOException, SQLException {
-    if (!busy) {
-      busy = true;
-      //check if it is a same chain
-      checkIsSameChain();
+    //check if it is a same chain
+    checkIsSameChain();
 
-      long blockInDB = getCurrentBlockNumberInDB();
-      String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
+    long blockInDB = getCurrentBlockNumberInDB();
+    String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
 
-      //check whether the chain forked or not
-      Block checkForkedDbBlock = WalletApi.getBlock4Loader(blockInDB, false);
-      while (blockInDB > 0 && checkForkedDbBlock.getSerializedSize() > 0
-          && !getBlockID(checkForkedDbBlock).equalsIgnoreCase(blockHashInDB)) {
-        //if forked, delete forked blocks in db
-        deleteForkedBlock(blockHashInDB, blockInDB);
-        blockInDB = getCurrentBlockNumberInDB();
-        blockHashInDB = getCurrentBlockHashInDB(blockInDB);
-      }
+    //check whether the chain forked or not
+    Block checkForkedDbBlock = WalletApi.getBlock4Loader(blockInDB, false);
+    while (blockInDB > 0 && checkForkedDbBlock.getSerializedSize() > 0
+        && !getBlockID(checkForkedDbBlock).equalsIgnoreCase(blockHashInDB)) {
+      //if forked, delete forked blocks in db
+      deleteForkedBlock(blockHashInDB, blockInDB);
+      blockInDB = getCurrentBlockNumberInDB();
+      blockHashInDB = getCurrentBlockHashInDB(blockInDB);
+    }
 
-      //sync data from solidity
-      Block blockInFullNode = getCurrentBlockInFull();
-      Block blockInSolidity = getCurrentBlockInSolidity();
-      long fullNode = blockInFullNode.getBlockHeader().getRawData().getNumber();
-      long solidity = blockInSolidity.getBlockHeader().getRawData().getNumber();
-      for (long i = blockInDB; i <= solidity; i++) {
-        Block block = WalletApi.getBlock4Loader(i, false);
-        parseBlock(block, false);
-      }
+    //sync data from solidity
+    Block blockInFullNode = getCurrentBlockInFull();
+    Block blockInSolidity = getCurrentBlockInSolidity();
+    long fullNode = blockInFullNode.getBlockHeader().getRawData().getNumber();
+    long solidity = blockInSolidity.getBlockHeader().getRawData().getNumber();
+    for (long i = blockInDB; i <= solidity; i++) {
+      Block block = WalletApi.getBlock4Loader(i, false);
+      parseBlock(block, false);
+    }
 
-      //sync data from fullnode
-      if (fullNode > solidity) {
-        Block checkForkBlock = WalletApi.getBlock4Loader(solidity, true);
-        if (getBlockID(checkForkBlock).equalsIgnoreCase(getBlockID(blockInSolidity))) {
-          for (long j = solidity + 1; j <= fullNode; j++) {
-            Block block = WalletApi.getBlock4Loader(j, true);
-            parseBlock(block, true);
-          }
+    //sync data from fullnode
+    if (fullNode > solidity) {
+      Block checkForkBlock = WalletApi.getBlock4Loader(solidity, true);
+      if (getBlockID(checkForkBlock).equalsIgnoreCase(getBlockID(blockInSolidity))) {
+        for (long j = solidity + 1; j <= fullNode; j++) {
+          Block block = WalletApi.getBlock4Loader(j, true);
+          parseBlock(block, true);
         }
       }
+    }
 
-      if (blockBulk.numberOfActions() > 0) {
-        bulkSave();
-      }
-      busy = false;
+    if (blockBulk.numberOfActions() > 0) {
+      bulkSave();
     }
   }
 
@@ -199,6 +196,7 @@ public class EsImporter {
       resetDB();
     }
   }
+
   private static void resetDB() throws IOException {
     deleteIndex("blocks");
   }
@@ -231,7 +229,6 @@ public class EsImporter {
     return hash;
   }
 
-
   private static Block getCurrentBlockInSolidity() {
     Block block = WalletApi.getBlock4Loader(-1, false);
     return block;
@@ -247,18 +244,19 @@ public class EsImporter {
       ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
+          System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
           loadDataFromNode();
         } catch (Exception e) {
           e.printStackTrace();
         }
       }, 2, 2, TimeUnit.SECONDS);
-     // resetDB();
+      // resetDB();
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
       try {
-       // client.close();
-      //  dbConnection.close();
+        // client.close();
+        //  dbConnection.close();
       } catch (Exception e) {
         e.printStackTrace();
       }
