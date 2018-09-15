@@ -1,6 +1,5 @@
 package org.tron.importer;
 
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.primitives.Longs;
 import java.io.IOException;
 import java.sql.Connection;
@@ -10,23 +9,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 import org.apache.http.HttpHost;
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.protos.Protocol.Block;
@@ -39,6 +33,16 @@ public class EsImporter {
       RestClient.builder(
           new HttpHost("18.223.114.116", 9200, "http")
       ));
+  private static Properties connectionProperties = new Properties();
+  private static Connection dbconnection;
+
+  static {
+    try {
+      dbconnection = DriverManager.getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
 
   private static byte[] getBlockID(Block block) {
     long blockNum = block.getBlockHeader().getRawData().getNumber();
@@ -87,54 +91,56 @@ public class EsImporter {
     }
   }
 
-  public static void getByid(String index, String type, String id) throws IOException {
-    GetRequest getRequest = new GetRequest(index, type, id);
-    try {
-      GetResponse getResponse = client.get(getRequest, RequestOptions.DEFAULT);
-      getResponse.getSource().entrySet().stream()
-          .forEach(x -> System.out.println(x.getKey() + " ->" + x.getValue()));
-    } catch (ElasticsearchException e) {
-      System.out.println(e.getMessage());
+  public static void deleteByID(String index, String type, String id) throws IOException {
+    DeleteRequest request = new DeleteRequest(index, type, id);
+    request.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+    request.setRefreshPolicy("wait_for");
+    DeleteResponse deleteResponse = client.delete(request, RequestOptions.DEFAULT);
+    ReplicationResponse.ShardInfo shardInfo = deleteResponse.getShardInfo();
+    if (shardInfo.getFailed() > 0) {
+      for (ReplicationResponse.ShardInfo.Failure failure : shardInfo.getFailures()) {
+        String reason = failure.reason();
+        System.out.println("delete "+ index + ":" + type + ":" + id + "failed:" + reason);
+      }
     }
   }
 
-  public static String getMaxBlockNumberInES() throws IOException {
-    SearchRequest searchRequest = new SearchRequest();
-    searchRequest.indices("tron");
-    searchRequest.types("blocks");
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.sort(new FieldSortBuilder("number").order(SortOrder.DESC));
-    searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-    searchRequest.source(searchSourceBuilder);
-    SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-    return searchResponse.getHits().getAt(0).getSourceAsMap().get("number").toString();
+  public static long getCurrentBlockInDB() throws SQLException {
+    Statement statement = dbconnection.createStatement();
+    ResultSet results = statement.executeQuery("select max(number) from tron");
+    long number = -1;
+    while (results.next()) {
+      number = results.getLong(1);
+    }
+    return number;
+  }
+
+  public static long getCurrentBlockInSolidity() {
+    Block block = WalletApi.getBlock4Loader(-1, false);
+    return block.getBlockHeader().getRawData().getNumber();
+  }
+
+  public static long getCurrentBlockInFull() {
+    Block block = WalletApi.getBlock4Loader(-1, true);
+    return block.getBlockHeader().getRawData().getNumber();
   }
 
 
-  public static void main(String[] args) throws IOException, SQLException {
+  public static void main(String[] args) {
 
     //  loadDataFromNode(client);
 
-    JSONObject query = JSONObject.parseObject("{\n"
-        + "\"query\": \"select max(number) from tron \"\n"
-        + "}");
-
-//    String result = Http.doPost("http://18.223.114.116:9200/_xpack/sql?format=txt", query.toJSONString(), "utf-8");
-//    System.out.println(result);
-
-    String address = "jdbc:es://18.223.114.116:9200";
     try {
-      Properties connectionProperties = new Properties();
-      Connection connection = DriverManager.getConnection(address, connectionProperties);
-      Statement statement = connection.createStatement();
-      ResultSet results = statement.executeQuery("select max(number) from tron");
-      while (results.next()) {
-        System.out.println(results.getInt(1));
-      }
+
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-      client.close();
+      try {
+        client.close();
+        dbconnection.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   }
 }
