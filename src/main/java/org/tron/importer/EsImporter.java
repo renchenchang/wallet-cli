@@ -7,6 +7,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -83,6 +85,7 @@ public class EsImporter {
   }
 
   private static void parseBlock(Block block, boolean full) throws IOException {
+    System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber());
     XContentBuilder builder = XContentFactory.jsonBuilder();
     builder.startObject();
     {
@@ -117,6 +120,25 @@ public class EsImporter {
     //to do, delete transactions in block
   }
 
+  private static List<Block> sortList(BlockList blockList) {
+    ArrayList<Block> list = new ArrayList<>();
+    list.addAll(blockList.getBlockList());
+    list.sort((x, y) -> {
+          long num1 = x.getBlockHeader().getRawData().getNumber();
+          long num2 = y.getBlockHeader().getRawData().getNumber();
+          if (num1 > num2) {
+            return 1;
+          } else if (num1 == num2) {
+            return 0;
+          } else {
+            return -1;
+          }
+        }
+    );
+    return list;
+  }
+
+
   public static void loadDataFromNode() throws IOException, SQLException {
     //check if it is a same chain
     checkIsSameChain();
@@ -145,14 +167,14 @@ public class EsImporter {
       while (i<=solidity) {
         if (i+100 <= solidity) {
           BlockList blockList = WalletApi.getBlockByLimitNext(i, i+100).get();
-          for (Block block : blockList.getBlockList()) {
+          for (Block block : sortList(blockList)) {
             parseBlock(block, false);
           }
           i += 100;
         } else {
           if(solidity > i) {
             BlockList blockList = WalletApi.getBlockByLimitNext(i, solidity + 1).get();
-            for (Block block : blockList.getBlockList()) {
+            for (Block block : sortList(blockList)) {
               parseBlock(block, false);
             }
             i = solidity + 1;
@@ -288,7 +310,7 @@ public class EsImporter {
           e.printStackTrace();
         }
       }, 2, 2, TimeUnit.SECONDS);
-     //  resetDB();
+   //    resetDB();
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
