@@ -26,6 +26,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.tron.api.GrpcAPI.BlockList;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.protos.Protocol.Block;
@@ -111,7 +112,7 @@ public class EsImporter {
     }
   }
 
-  private static void deleteForkedBlock(String hash, long number) throws IOException {
+  private static void deleteForkedBlock(String hash) throws IOException {
     deleteByID("blocks", "blocks", hash);
     //to do, delete transactions in block
   }
@@ -122,31 +123,54 @@ public class EsImporter {
 
     long blockInDB = getCurrentBlockNumberInDB();
     String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
-
     //check whether the chain forked or not
-    Block checkForkedDbBlock = WalletApi.getBlock4Loader(blockInDB, false);
-    while (blockInDB > 0 && checkForkedDbBlock.getSerializedSize() > 0
-        && !getBlockID(checkForkedDbBlock).equalsIgnoreCase(blockHashInDB)) {
+    Block checkDBForkedBlock = WalletApi.getBlock4Loader(blockInDB, false);
+    while (blockInDB > 0 && checkDBForkedBlock.getSerializedSize() > 0
+        && !getBlockID(checkDBForkedBlock).equalsIgnoreCase(blockHashInDB)) {
       //if forked, delete forked blocks in db
-      deleteForkedBlock(blockHashInDB, blockInDB);
+      deleteForkedBlock(blockHashInDB);
       blockInDB = getCurrentBlockNumberInDB();
       blockHashInDB = getCurrentBlockHashInDB(blockInDB);
     }
 
     //sync data from solidity
-    Block blockInFullNode = getCurrentBlockInFull();
+    long syncBlockFrom = getCurrentConfirmedBlockNumberInDB() + 1;
     Block blockInSolidity = getCurrentBlockInSolidity();
-    long fullNode = blockInFullNode.getBlockHeader().getRawData().getNumber();
     long solidity = blockInSolidity.getBlockHeader().getRawData().getNumber();
-    for (long i = blockInDB; i <= solidity; i++) {
-      Block block = WalletApi.getBlock4Loader(i, false);
-      parseBlock(block, false);
+    Block checkFullNodeForkedBlock = WalletApi.getBlock4Loader(solidity, true);
+    boolean noForked = getBlockID(checkFullNodeForkedBlock).equalsIgnoreCase(getBlockID(blockInSolidity));
+    //get solidity blocks in batch mode from full node
+    if(noForked) {
+      long i = syncBlockFrom;
+      while (i<=solidity) {
+        if (i+100 <= solidity) {
+          BlockList blockList = WalletApi.getBlockByLimitNext(i, i+100).get();
+          for (Block block : blockList.getBlockList()) {
+            parseBlock(block, false);
+          }
+          i += 100;
+        } else {
+          if(solidity > i) {
+            BlockList blockList = WalletApi.getBlockByLimitNext(i, solidity + 1).get();
+            for (Block block : blockList.getBlockList()) {
+              parseBlock(block, false);
+            }
+            i = solidity + 1;
+          }
+        }
+      }
+    } else { //sync data from solidity
+      for (long i=syncBlockFrom; i<=solidity; i++) {
+        Block block = WalletApi.getBlock4Loader(i, false);
+        parseBlock(block, false);
+      }
     }
 
     //sync data from fullnode
+    Block blockInFullNode = getCurrentBlockInFull();
+    long fullNode = blockInFullNode.getBlockHeader().getRawData().getNumber();
     if (fullNode > solidity) {
-      Block checkForkBlock = WalletApi.getBlock4Loader(solidity, true);
-      if (getBlockID(checkForkBlock).equalsIgnoreCase(getBlockID(blockInSolidity))) {
+      if (noForked) {
         for (long j = solidity + 1; j <= fullNode; j++) {
           Block block = WalletApi.getBlock4Loader(j, true);
           parseBlock(block, true);
@@ -201,6 +225,20 @@ public class EsImporter {
     deleteIndex("blocks");
   }
 
+  private static long getCurrentConfirmedBlockNumberInDB() {
+    long number = 0;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement.executeQuery("select max(number) from blocks where confirmed=true");
+      while (results.next()) {
+        number = results.getLong(1);
+      }
+    } catch (Exception e) {
+
+    }
+    return number;
+  }
+
   private static long getCurrentBlockNumberInDB() {
     long number = 0;
     try {
@@ -250,7 +288,7 @@ public class EsImporter {
           e.printStackTrace();
         }
       }, 2, 2, TimeUnit.SECONDS);
-      // resetDB();
+     //  resetDB();
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
