@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -85,7 +86,8 @@ public class EsImporter {
   }
 
   private static void parseBlock(Block block, boolean full) throws IOException {
-    System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber());
+    System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber()
+    + ", confirmed: " + !full);
     XContentBuilder builder = XContentFactory.jsonBuilder();
     builder.startObject();
     {
@@ -143,9 +145,9 @@ public class EsImporter {
     //check if it is a same chain
     checkIsSameChain();
 
+    //check whether the chain forked or not
     long blockInDB = getCurrentBlockNumberInDB();
     String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
-    //check whether the chain forked or not
     Block checkDBForkedBlock = WalletApi.getBlock4Loader(blockInDB, false);
     while (blockInDB > 0 && checkDBForkedBlock.getSerializedSize() > 0
         && !getBlockID(checkDBForkedBlock).equalsIgnoreCase(blockHashInDB)) {
@@ -160,9 +162,9 @@ public class EsImporter {
     Block blockInSolidity = getCurrentBlockInSolidity();
     long solidity = blockInSolidity.getBlockHeader().getRawData().getNumber();
     Block checkFullNodeForkedBlock = WalletApi.getBlock4Loader(solidity, true);
-    boolean noForked = getBlockID(checkFullNodeForkedBlock).equalsIgnoreCase(getBlockID(blockInSolidity));
+    boolean fullNodeNotForked = getBlockID(checkFullNodeForkedBlock).equalsIgnoreCase(getBlockID(blockInSolidity));
     //get solidity blocks in batch mode from full node
-    if(noForked) {
+    if(fullNodeNotForked) {
       long i = syncBlockFrom;
       while (i<=solidity) {
         if (i+100 <= solidity) {
@@ -187,13 +189,16 @@ public class EsImporter {
         parseBlock(block, false);
       }
     }
+    if (blockBulk.numberOfActions() > 0) {
+      bulkSave();
+    }
 
-    //sync data from fullnode
-    Block blockInFullNode = getCurrentBlockInFull();
-    long fullNode = blockInFullNode.getBlockHeader().getRawData().getNumber();
+    //sync data from full node
+    long fullNode = getCurrentBlockInFull().getBlockHeader().getRawData().getNumber();
+    long currentBlockInDB = getCurrentBlockNumberInDB();
     if (fullNode > solidity) {
-      if (noForked) {
-        for (long j = solidity + 1; j <= fullNode; j++) {
+      if (fullNodeNotForked) {
+        for (long j = currentBlockInDB + 1; j <= fullNode; j++) {
           Block block = WalletApi.getBlock4Loader(j, true);
           parseBlock(block, true);
         }
@@ -222,7 +227,7 @@ public class EsImporter {
   private static void deleteIndex(String index) throws IOException {
     DeleteIndexRequest request = new DeleteIndexRequest(index);
     request.timeout(TimeValue.timeValueMinutes(2));
-    request.timeout("2m");
+    request.timeout("10s");
     request.indicesOptions(IndicesOptions.lenientExpandOpen());
     client.indices().delete(request, RequestOptions.DEFAULT);
   }
@@ -304,19 +309,19 @@ public class EsImporter {
       ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
-          System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+          System.out.println("sync data from block chain at:" + new Date());
           loadDataFromNode();
         } catch (Exception e) {
           e.printStackTrace();
         }
       }, 2, 2, TimeUnit.SECONDS);
-   //    resetDB();
+    //  resetDB();
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
       try {
-        // client.close();
-        //  dbConnection.close();
+//         client.close();
+//         dbConnection.close();
       } catch (Exception e) {
         e.printStackTrace();
       }
