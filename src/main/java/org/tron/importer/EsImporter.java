@@ -1,6 +1,5 @@
 package org.tron.importer;
 
-import com.google.common.primitives.Longs;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -23,6 +22,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -30,9 +30,10 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.tron.api.GrpcAPI.BlockList;
-import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.protos.Protocol.Block;
+import org.tron.protos.Protocol.Transaction;
+import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.walletserver.WalletApi;
 
 
@@ -68,47 +69,79 @@ public class EsImporter {
     return dbConnection;
   }
 
-  private String getBlockID(Block block) {
-    long blockNum = block.getBlockHeader().getRawData().getNumber();
-    byte[] blockHash = Sha256Hash.of(block.getBlockHeader().getRawData().toByteArray())
-        .getByteString().toByteArray();
-    byte[] numBytes = Longs.toByteArray(blockNum);
-    byte[] hash = new byte[blockHash.length];
-    System.arraycopy(numBytes, 0, hash, 0, 8);
-    System.arraycopy(blockHash, 8, hash, 8, blockHash.length - 8);
-    return ByteArray.toHexString(hash);
-  }
-
   private void bulkSave() throws IOException {
     client.bulk(blockBulk, RequestOptions.DEFAULT);
     blockBulk.requests().clear();
   }
 
+
+  private void parseTransactions(Block block, boolean full) throws IOException {
+    for (Transaction transaction : block.getTransactionsList()) {
+      Transaction.Contract contract = transaction.getRawData().getContract(0);
+      ContractType contractType = contract.getType();
+
+      XContentBuilder builder = XContentFactory.jsonBuilder();
+      builder.startObject();
+
+      builder.field("date_created", transaction.getRawData().getTimestamp());
+      builder.field("block", block.getBlockHeader().getRawData().getNumber());
+      builder.field("hash", Util.getTxID(transaction));
+      builder.field("contract_data",
+          ByteArray
+              .toHexString(block.getBlockHeader().getRawData().toByteArray()));
+      builder.field("contract_type", contractType);
+      builder.field("owner_address",
+          WalletApi.encode58Check(Util.getOwner(contract)));
+      builder.field("to_address", Util.getTo(contract));
+      builder.field("confirmed", !full);
+
+      builder.endObject();
+      IndexRequest indexRequest = new IndexRequest("transactions", "transactions",
+          Util.getTxID(transaction))
+          .source(builder);
+      blockBulk.add(indexRequest);
+
+      List<UpdateRequest> updateList = Util.getUpdateBuilder(block, transaction, full);
+      if (updateList != null) {
+        for (UpdateRequest updateRequest : updateList) {
+          blockBulk.add(updateRequest);
+        }
+      }
+
+      List<IndexRequest> indexList = Util.getIndexBuilder(block, transaction, full);
+      if (indexList != null) {
+        for (IndexRequest request : indexList) {
+          blockBulk.add(request);
+        }
+      }
+    }
+  }
+
   private void parseBlock(Block block, boolean full) throws IOException {
     System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber()
-    + ", confirmed: " + !full);
+        + ", confirmed: " + !full);
+
+    parseTransactions(block, full);
+
     XContentBuilder builder = XContentFactory.jsonBuilder();
     builder.startObject();
-    {
-      builder.field("hash", getBlockID(block));
-      builder.field("number", block.getBlockHeader().getRawData().getNumber());
-      builder.field("witness_address", WalletApi
-          .encode58Check(block.getBlockHeader().getRawData().getWitnessAddress().toByteArray()));
-      builder.field("parent_hash",
-          ByteArray
-              .toHexString(block.getBlockHeader().getRawData().getParentHash().toByteArray()));
-      builder.field("date_created", block.getBlockHeader().getRawData().getTimestamp());
-      builder.field("trie",
-          WalletApi
-              .encode58Check(block.getBlockHeader().getRawData().getTxTrieRoot().toByteArray()));
-      builder.field("witness_id", block.getBlockHeader().getRawData().getWitnessId());
-      builder.field("transactions", block.getTransactionsCount());
-      builder.field("size", block.toByteArray().length);
-      builder.field("confirmed", !full);
-    }
+    builder.field("hash", Util.getBlockID(block));
+    builder.field("number", block.getBlockHeader().getRawData().getNumber());
+    builder.field("witness_address", WalletApi
+        .encode58Check(block.getBlockHeader().getRawData().getWitnessAddress().toByteArray()));
+    builder.field("parent_hash",
+        ByteArray
+            .toHexString(block.getBlockHeader().getRawData().getParentHash().toByteArray()));
+    builder.field("date_created", block.getBlockHeader().getRawData().getTimestamp());
+    builder.field("trie",
+        WalletApi
+            .encode58Check(block.getBlockHeader().getRawData().getTxTrieRoot().toByteArray()));
+    builder.field("witness_id", block.getBlockHeader().getRawData().getWitnessId());
+    builder.field("transactions", block.getTransactionsCount());
+    builder.field("size", block.toByteArray().length);
+    builder.field("confirmed", !full);
     builder.endObject();
-
-    IndexRequest indexRequest = new IndexRequest("blocks", "blocks", getBlockID(block))
+    IndexRequest indexRequest = new IndexRequest("blocks", "blocks", Util.getBlockID(block))
         .source(builder);
     blockBulk.add(indexRequest);
     if (blockBulk.numberOfActions() >= 5000) {
@@ -148,7 +181,7 @@ public class EsImporter {
     String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
     Block checkDBForkedBlock = WalletApi.getBlock4Loader(blockInDB, false);
     while (blockInDB > 0 && checkDBForkedBlock.getSerializedSize() > 0
-        && !getBlockID(checkDBForkedBlock).equalsIgnoreCase(blockHashInDB)) {
+        && !Util.getBlockID(checkDBForkedBlock).equalsIgnoreCase(blockHashInDB)) {
       //if forked, delete forked blocks in db
       deleteForkedBlock(blockHashInDB);
       blockInDB = getCurrentBlockNumberInDB();
@@ -160,13 +193,14 @@ public class EsImporter {
     Block blockInSolidity = getCurrentBlockInSolidity();
     long solidity = blockInSolidity.getBlockHeader().getRawData().getNumber();
     Block checkFullNodeForkedBlock = WalletApi.getBlock4Loader(solidity, true);
-    boolean fullNodeNotForked = getBlockID(checkFullNodeForkedBlock).equalsIgnoreCase(getBlockID(blockInSolidity));
+    boolean fullNodeNotForked = Util.getBlockID(checkFullNodeForkedBlock).equalsIgnoreCase(
+        Util.getBlockID(blockInSolidity));
     //get solidity blocks in batch mode from full node
-    if(fullNodeNotForked) {
+    if (fullNodeNotForked) {
       long i = syncBlockFrom;
-      while (i<=solidity) {
-        if (i+100 <= solidity) {
-          BlockList blockList = WalletApi.getBlockByLimitNext(i, i+100).get();
+      while (i <= solidity) {
+        if (i + 100 <= solidity) {
+          BlockList blockList = WalletApi.getBlockByLimitNext(i, i + 100).get();
           for (Block block : sortList(blockList)) {
             parseBlock(block, false);
           }
@@ -180,7 +214,7 @@ public class EsImporter {
         }
       }
     } else { //sync data from solidity
-      for (long i=syncBlockFrom; i<=solidity; i++) {
+      for (long i = syncBlockFrom; i <= solidity; i++) {
         Block block = WalletApi.getBlock4Loader(i, false);
         parseBlock(block, false);
       }
@@ -239,7 +273,7 @@ public class EsImporter {
       }
     } catch (Exception e) {
     }
-    if (!hash.equals("") && !hash.equalsIgnoreCase(getBlockID(block))) {
+    if (!hash.equals("") && !hash.equalsIgnoreCase(Util.getBlockID(block))) {
       resetDB();
     }
   }
@@ -252,7 +286,8 @@ public class EsImporter {
     long number = 0;
     try {
       Statement statement = getConn().createStatement();
-      ResultSet results = statement.executeQuery("select max(number) from blocks where confirmed=true");
+      ResultSet results = statement
+          .executeQuery("select max(number) from blocks where confirmed=true");
       while (results.next()) {
         number = results.getLong(1);
       }
@@ -312,7 +347,7 @@ public class EsImporter {
           e.printStackTrace();
         }
       }, 2, 2, TimeUnit.SECONDS);
-    //  resetDB();
+      //  resetDB();
     } catch (Exception e) {
       e.printStackTrace();
     }

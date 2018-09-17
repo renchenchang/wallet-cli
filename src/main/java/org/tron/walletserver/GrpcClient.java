@@ -413,7 +413,7 @@ public class GrpcClient {
     }
   }
 
-  public Block getBlock4Loader(long blockNum,boolean full) {
+  public Block getBlock4Loader(long blockNum, boolean full) {
     if (blockNum < 0) {
       if (!full) {
         return blockingStubSolidity.getNowBlock(EmptyMessage.newBuilder().build());
