@@ -97,6 +97,7 @@ dependencies {
     compile 'com.alibaba:fastjson:1.2.47'
     compile files('/Users/renchengchang/libs/x-pack-sql-jdbc-6.4.0.jar')
 
+    compile 'com.alibaba:fastjson:1.2.47'
 }
 
 protobuf {

@@ -164,23 +164,18 @@ public class Client {
     char[] oldPassword = Utils.inputPassword(false);
     System.out.println("Please input new password.");
     char[] newPassword = inputPassword2Twice();
-
+    StringUtils.clear(oldPassword);
+    StringUtils.clear(newPassword);
     if (walletApiWrapper.changePassword(oldPassword, newPassword)) {
       System.out.println("ChangePassword successful !!");
     } else {
       System.out.println("ChangePassword failed !!");
     }
-    StringUtils.clear(oldPassword);
-    StringUtils.clear(newPassword);
+
   }
 
   private void login() throws IOException, CipherException {
-    System.out.println("Please input your password.");
-    char[] password = Utils.inputPassword(false);
-
-    boolean result = walletApiWrapper.login(password);
-    StringUtils.clear(password);
-
+    boolean result = walletApiWrapper.login();
     if (result) {
       System.out.println("Login successful !!!");
     } else {
@@ -194,11 +189,7 @@ public class Client {
   }
 
   private void backupWallet() throws IOException, CipherException {
-    System.out.println("Please input your password.");
-    char[] password = Utils.inputPassword(false);
-
-    byte[] priKey = walletApiWrapper.backupWallet(password);
-    StringUtils.clear(password);
+    byte[] priKey = walletApiWrapper.backupWallet();
 
     if (!ArrayUtils.isEmpty(priKey)) {
       System.out.println("BackupWallet successful !!");
@@ -211,11 +202,7 @@ public class Client {
   }
 
   private void backupWallet2Base64() throws IOException, CipherException {
-    System.out.println("Please input your password.");
-    char[] password = Utils.inputPassword(false);
-
-    byte[] priKey = walletApiWrapper.backupWallet(password);
-    StringUtils.clear(password);
+    byte[] priKey = walletApiWrapper.backupWallet();
 
     if (!ArrayUtils.isEmpty(priKey)) {
       Encoder encoder = Base64.getEncoder();
@@ -323,7 +310,6 @@ public class Client {
       logger.info("Set AccountId failed !!!!");
     }
   }
-
 
   private void updateAsset(String[] parameters)
       throws IOException, CipherException, CancelException {
@@ -1555,6 +1541,77 @@ public class Client {
     }
   }
 
+  private void updateAccountPermission(String[] parameters) throws CipherException, IOException, CancelException {
+    boolean ret = walletApiWrapper.accountPermissionUpdate(parameters[0]);
+    if (ret) {
+      logger.info("updateAccountPermission successful !!!!");
+    } else {
+      logger.info("updateAccountPermission failed !!!!");
+    }
+  }
+
+  private void permissionAddKey(String[] parameters)
+      throws CipherException, IOException, CancelException {
+    if (parameters == null || parameters.length != 3) {
+      System.out.println("permissionAddKey needs 3 parameters, like permissionAddKey permissionName address weight");
+      return;
+    }
+    String permission = parameters[0];
+    String address = parameters[1];
+    int weight = 0;
+    try {
+      weight = Integer.parseInt(parameters[2]);
+    } catch (NumberFormatException e) {
+      System.out.println("weight should be a integer");
+      return;
+    }
+    boolean ret = walletApiWrapper.permissionAddKey(permission, address, weight);
+    if (ret) {
+      logger.info("permissionAddKey successful !!!!");
+    } else {
+      logger.info("permissionAddKey failed !!!!");
+    }
+  }
+
+  private void permissionUpdateKey(String[] parameters)
+      throws CipherException, IOException, CancelException {
+    if (parameters == null || parameters.length != 3) {
+      System.out.println("permissionUpdateKey needs 3 parameters, like permissionUpdateKey permissionName address weight");
+      return;
+    }
+    String permission = parameters[0];
+    String address = parameters[1];
+    int weight = 0;
+    try {
+      weight = Integer.parseInt(parameters[2]);
+    } catch (NumberFormatException e) {
+      System.out.println("weight should be a integer");
+      return;
+    }
+    boolean ret = walletApiWrapper.permissionUpdateKey(permission, address, weight);
+    if (ret) {
+      logger.info("permissionUpdateKey successful !!!!");
+    } else {
+      logger.info("permissionUpdateKey failed !!!!");
+    }
+  }
+
+  private void permissionDeleteKey(String[] parameters)
+      throws CipherException, IOException, CancelException {
+    if (parameters == null || parameters.length != 2) {
+      System.out.println("permissionDeleteKey needs 2 parameters, like permissionDeleteKey permissionName address");
+      return;
+    }
+    String permission = parameters[0];
+    String address = parameters[1];
+    boolean ret = walletApiWrapper.permissionDeleteKey(permission, address);
+    if (ret) {
+      logger.info("permissionDeleteKey successful !!!!");
+    } else {
+      logger.info("permissionDeleteKey failed !!!!");
+    }
+  }
+
   private void help() {
     System.out.println("Help: List of Tron Wallet-cli commands");
     System.out.println(
@@ -1632,6 +1689,10 @@ public class Client {
     System.out.println("ExchangeTransaction");
     System.out.println("ListExchanges");
     System.out.println("GetExchange");
+    System.out.println("UpdateAccountPermission");
+    System.out.println("permissionAddKey");
+    System.out.println("permissionUpdateKey");
+    System.out.println("permissionDeleteKey");
     System.out.println("Exit or Quit");
 
     System.out.println("Input any one of the listed commands, to display how-to tips.");
@@ -1639,7 +1700,8 @@ public class Client {
 
   private String[] getCmd(String cmdLine) {
     if (cmdLine.indexOf("\"") < 0 || cmdLine.toLowerCase().startsWith("deploycontract")
-        || cmdLine.toLowerCase().startsWith("triggercontract")) {
+        || cmdLine.toLowerCase().startsWith("triggercontract")
+        || cmdLine.toLowerCase().startsWith("updateaccountpermission")) {
       return cmdLine.split("\\s+");
     }
     String[] strArray = cmdLine.split("\"");
@@ -1988,6 +2050,22 @@ public class Client {
           }
           case "generateaddress": {
             generateAddress();
+            break;
+          }
+          case "updateaccountpermission": {
+            updateAccountPermission(parameters);
+            break;
+          }
+          case "permissionaddkey": {
+            permissionAddKey(parameters);
+            break;
+          }
+          case "permissionupdatekey": {
+            permissionUpdateKey(parameters);
+            break;
+          }
+          case "permissiondeletekey": {
+            permissionDeleteKey(parameters);
             break;
           }
           case "exit":
