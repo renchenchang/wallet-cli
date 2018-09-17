@@ -38,12 +38,12 @@ import org.tron.walletserver.WalletApi;
 
 public class EsImporter {
 
-  private static RestHighLevelClient client;
-  private static Properties connectionProperties = new Properties();
-  private static Connection dbConnection;
-  private static BulkRequest blockBulk = new BulkRequest();
+  private RestHighLevelClient client;
+  private Properties connectionProperties = new Properties();
+  private Connection dbConnection;
+  private BulkRequest blockBulk = new BulkRequest();
 
-  static {
+  public EsImporter() {
     try {
       client = new RestHighLevelClient(
           RestClient.builder(
@@ -60,7 +60,7 @@ public class EsImporter {
     }
   }
 
-  private static Connection getConn() throws SQLException {
+  private Connection getConn() throws SQLException {
     if (dbConnection.isClosed()) {
       dbConnection = DriverManager
           .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
@@ -68,7 +68,7 @@ public class EsImporter {
     return dbConnection;
   }
 
-  private static String getBlockID(Block block) {
+  private String getBlockID(Block block) {
     long blockNum = block.getBlockHeader().getRawData().getNumber();
     byte[] blockHash = Sha256Hash.of(block.getBlockHeader().getRawData().toByteArray())
         .getByteString().toByteArray();
@@ -79,12 +79,12 @@ public class EsImporter {
     return ByteArray.toHexString(hash);
   }
 
-  private static void bulkSave() throws IOException {
+  private void bulkSave() throws IOException {
     client.bulk(blockBulk, RequestOptions.DEFAULT);
     blockBulk.requests().clear();
   }
 
-  private static void parseBlock(Block block, boolean full) throws IOException {
+  private void parseBlock(Block block, boolean full) throws IOException {
     System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber()
     + ", confirmed: " + !full);
     XContentBuilder builder = XContentFactory.jsonBuilder();
@@ -116,12 +116,12 @@ public class EsImporter {
     }
   }
 
-  private static void deleteForkedBlock(String hash) throws IOException {
+  private void deleteForkedBlock(String hash) throws IOException {
     deleteByID("blocks", "blocks", hash);
     //to do, delete transactions in block
   }
 
-  private static List<Block> sortList(BlockList blockList) {
+  private List<Block> sortList(BlockList blockList) {
     ArrayList<Block> list = new ArrayList<>();
     list.addAll(blockList.getBlockList());
     list.sort((x, y) -> {
@@ -140,7 +140,7 @@ public class EsImporter {
   }
 
 
-  public static void loadDataFromNode() throws IOException, SQLException {
+  public void loadDataFromNode() throws IOException, SQLException {
     //check if it is a same chain
     checkIsSameChain();
 
@@ -207,7 +207,7 @@ public class EsImporter {
     }
   }
 
-  public static void deleteByID(String index, String type, String id) throws IOException {
+  public void deleteByID(String index, String type, String id) throws IOException {
     DeleteRequest request = new DeleteRequest(index, type, id);
     request.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
     request.setRefreshPolicy("wait_for");
@@ -221,7 +221,7 @@ public class EsImporter {
     }
   }
 
-  private static void deleteIndex(String index) throws IOException {
+  private void deleteIndex(String index) throws IOException {
     DeleteIndexRequest request = new DeleteIndexRequest(index);
     request.timeout(TimeValue.timeValueMinutes(2));
     request.timeout("10s");
@@ -229,7 +229,7 @@ public class EsImporter {
     client.indices().delete(request, RequestOptions.DEFAULT);
   }
 
-  private static void checkIsSameChain() throws IOException {
+  private void checkIsSameChain() throws IOException {
     Block block = WalletApi.getBlock4Loader(1, false);
     String hash = "";
     try {
@@ -245,11 +245,11 @@ public class EsImporter {
     }
   }
 
-  private static void resetDB() throws IOException {
+  private void resetDB() throws IOException {
     deleteIndex("blocks");
   }
 
-  private static long getCurrentConfirmedBlockNumberInDB() {
+  private long getCurrentConfirmedBlockNumberInDB() {
     long number = 0;
     try {
       Statement statement = getConn().createStatement();
@@ -263,7 +263,7 @@ public class EsImporter {
     return number;
   }
 
-  private static long getCurrentBlockNumberInDB() {
+  private long getCurrentBlockNumberInDB() {
     long number = 0;
     try {
       Statement statement = getConn().createStatement();
@@ -277,7 +277,7 @@ public class EsImporter {
     return number;
   }
 
-  private static String getCurrentBlockHashInDB(long number) {
+  private String getCurrentBlockHashInDB(long number) {
     String hash = "";
     try {
       Statement statement = getConn().createStatement();
@@ -291,23 +291,24 @@ public class EsImporter {
     return hash;
   }
 
-  private static Block getCurrentBlockInSolidity() {
+  private Block getCurrentBlockInSolidity() {
     Block block = WalletApi.getBlock4Loader(-1, false);
     return block;
   }
 
-  private static Block getCurrentBlockInFull() {
+  private Block getCurrentBlockInFull() {
     Block block = WalletApi.getBlock4Loader(-1, true);
     return block;
   }
 
   public static void main(String[] args) {
     try {
+      EsImporter importer = new EsImporter();
       ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
           System.out.println("sync data from block chain at:" + new Date());
-          loadDataFromNode();
+          importer.loadDataFromNode();
         } catch (Exception e) {
           e.printStackTrace();
         }
