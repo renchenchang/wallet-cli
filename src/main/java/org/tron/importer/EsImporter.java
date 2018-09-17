@@ -139,7 +139,6 @@ public class EsImporter {
     return list;
   }
 
-
   public void loadDataFromNode() throws IOException, SQLException {
     //check if it is a same chain
     checkIsSameChain();
