@@ -145,6 +145,7 @@ public class EsImporter {
     //check if it is a same chain
     checkIsSameChain();
 
+    System.out.println("check forked");
     //check whether the chain forked or not
     long blockInDB = getCurrentBlockNumberInDB();
     String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
@@ -156,7 +157,7 @@ public class EsImporter {
       blockInDB = getCurrentBlockNumberInDB();
       blockHashInDB = getCurrentBlockHashInDB(blockInDB);
     }
-
+    System.out.println("sync from solidity");
     //sync data from solidity
     long syncBlockFrom = getCurrentConfirmedBlockNumberInDB() + 1;
     Block blockInSolidity = getCurrentBlockInSolidity();
@@ -164,6 +165,7 @@ public class EsImporter {
     Block checkFullNodeForkedBlock = WalletApi.getBlock4Loader(solidity, true);
     boolean fullNodeNotForked = getBlockID(checkFullNodeForkedBlock).equalsIgnoreCase(getBlockID(blockInSolidity));
     //get solidity blocks in batch mode from full node
+    System.out.println("fullNodeNotForked = " + fullNodeNotForked);
     if(fullNodeNotForked) {
       long i = syncBlockFrom;
       while (i<=solidity) {
@@ -174,13 +176,11 @@ public class EsImporter {
           }
           i += 100;
         } else {
-          if(solidity > i) {
-            BlockList blockList = WalletApi.getBlockByLimitNext(i, solidity + 1).get();
-            for (Block block : sortList(blockList)) {
-              parseBlock(block, false);
-            }
-            i = solidity + 1;
+          BlockList blockList = WalletApi.getBlockByLimitNext(i, solidity + 1).get();
+          for (Block block : sortList(blockList)) {
+            parseBlock(block, false);
           }
+          i = solidity + 1;
         }
       }
     } else { //sync data from solidity
@@ -189,10 +189,13 @@ public class EsImporter {
         parseBlock(block, false);
       }
     }
+
+    System.out.println("save data from solidity");
     if (blockBulk.numberOfActions() > 0) {
       bulkSave();
     }
 
+    System.out.println("sync from full node ");
     //sync data from full node
     long fullNode = getCurrentBlockInFull().getBlockHeader().getRawData().getNumber();
     long currentBlockInDB = getCurrentBlockNumberInDB();
@@ -204,7 +207,7 @@ public class EsImporter {
         }
       }
     }
-
+    System.out.println("save data from full node");
     if (blockBulk.numberOfActions() > 0) {
       bulkSave();
     }
@@ -318,13 +321,6 @@ public class EsImporter {
     //  resetDB();
     } catch (Exception e) {
       e.printStackTrace();
-    } finally {
-      try {
-//         client.close();
-//         dbConnection.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
     }
   }
 }
