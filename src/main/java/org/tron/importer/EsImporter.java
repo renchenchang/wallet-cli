@@ -82,7 +82,6 @@ public class EsImporter {
   private static void bulkSave() throws IOException {
     client.bulk(blockBulk, RequestOptions.DEFAULT);
     blockBulk.requests().clear();
-    //to do, save transaction in block
   }
 
   private static void parseBlock(Block block, boolean full) throws IOException {
@@ -145,7 +144,6 @@ public class EsImporter {
     //check if it is a same chain
     checkIsSameChain();
 
-    System.out.println("check forked");
     //check whether the chain forked or not
     long blockInDB = getCurrentBlockNumberInDB();
     String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
@@ -157,7 +155,7 @@ public class EsImporter {
       blockInDB = getCurrentBlockNumberInDB();
       blockHashInDB = getCurrentBlockHashInDB(blockInDB);
     }
-    System.out.println("sync from solidity");
+
     //sync data from solidity
     long syncBlockFrom = getCurrentConfirmedBlockNumberInDB() + 1;
     Block blockInSolidity = getCurrentBlockInSolidity();
@@ -165,7 +163,6 @@ public class EsImporter {
     Block checkFullNodeForkedBlock = WalletApi.getBlock4Loader(solidity, true);
     boolean fullNodeNotForked = getBlockID(checkFullNodeForkedBlock).equalsIgnoreCase(getBlockID(blockInSolidity));
     //get solidity blocks in batch mode from full node
-    System.out.println("fullNodeNotForked = " + fullNodeNotForked);
     if(fullNodeNotForked) {
       long i = syncBlockFrom;
       while (i<=solidity) {
@@ -190,12 +187,10 @@ public class EsImporter {
       }
     }
 
-    System.out.println("save data from solidity");
     if (blockBulk.numberOfActions() > 0) {
       bulkSave();
     }
 
-    System.out.println("sync from full node ");
     //sync data from full node
     long fullNode = getCurrentBlockInFull().getBlockHeader().getRawData().getNumber();
     long currentBlockInDB = getCurrentBlockNumberInDB();
@@ -207,7 +202,6 @@ public class EsImporter {
         }
       }
     }
-    System.out.println("save data from full node");
     if (blockBulk.numberOfActions() > 0) {
       bulkSave();
     }
