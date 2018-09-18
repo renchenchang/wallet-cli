@@ -50,9 +50,7 @@ public class EsImporter {
           RestClient.builder(
               new HttpHost("18.223.114.116", 9200, "http")
           ));
-      blockBulk.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
       blockBulk.setRefreshPolicy("wait_for");
-      blockBulk.timeout(TimeValue.timeValueMinutes(2));
       blockBulk.timeout("2m");
       dbConnection = DriverManager
           .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
@@ -242,7 +240,6 @@ public class EsImporter {
 
   public void deleteByID(String index, String type, String id) throws IOException {
     DeleteRequest request = new DeleteRequest(index, type, id);
-    request.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
     request.setRefreshPolicy("wait_for");
     DeleteResponse deleteResponse = client.delete(request, RequestOptions.DEFAULT);
     ReplicationResponse.ShardInfo shardInfo = deleteResponse.getShardInfo();
@@ -256,8 +253,7 @@ public class EsImporter {
 
   private void deleteIndex(String index) throws IOException {
     DeleteIndexRequest request = new DeleteIndexRequest(index);
-    request.timeout(TimeValue.timeValueMinutes(2));
-    request.timeout("10s");
+    request.timeout("2m");
     request.indicesOptions(IndicesOptions.lenientExpandOpen());
     client.indices().delete(request, RequestOptions.DEFAULT);
   }
