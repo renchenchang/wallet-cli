@@ -89,8 +89,8 @@ public class Util {
           UpdateRequest request = new UpdateRequest("asset_issue_contract", "asset_issue_contract",
               WalletApi.encode58Check(Util.getOwner(contract)));
           JSONObject jsonObject = new JSONObject();
-          jsonObject.put("description", updateAssetContract.getDescription());
-          jsonObject.put("url", updateAssetContract.getUrl());
+          jsonObject.put("description", updateAssetContract.getDescription().toStringUtf8());
+          jsonObject.put("url", updateAssetContract.getUrl().toStringUtf8());
           request.doc(jsonObject.toJSONString(), "XContentType.JSON");
           list.add(request);
           break;
