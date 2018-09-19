@@ -123,7 +123,6 @@ public class Util {
           builder.field("confirmed", !full);
           builder.field("token_name", "trx");
           builder.field("amount", transferContract.getAmount());
-          builder.field("confirmed", !full);
           builder.endObject();
           IndexRequest indexRequest = new IndexRequest("transfers", "transfers",
               Util.getTxID(transaction))
@@ -136,7 +135,7 @@ public class Util {
               .unpack(AssetIssueContract.class);
           builder.field("owner_address",
               WalletApi.encode58Check(Util.getOwner(contract)));
-          builder.field("name", assetIssueContract.getName());
+          builder.field("name", assetIssueContract.getName().toStringUtf8());
           builder.field("total_supply", assetIssueContract.getTotalSupply());
           builder.field("trx_num", assetIssueContract.getTrxNum());
           builder.field("num", assetIssueContract.getNum());
@@ -144,13 +143,13 @@ public class Util {
           builder.field("date_start", assetIssueContract.getStartTime());
           builder.field("decay_ratio", "");
           builder.field("vote_score", assetIssueContract.getVoteScore());
-          builder.field("description", assetIssueContract.getDescription());
-          builder.field("url", assetIssueContract.getUrl());
+          builder.field("description", assetIssueContract.getDescription().toStringUtf8());
+          builder.field("url", assetIssueContract.getUrl().toStringUtf8());
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
           builder.field("date_created", transaction.getRawData().getTimestamp());
           builder.field("frozen", "");
-          builder.field("abbr", assetIssueContract.getAbbr());
+          builder.field("abbr", assetIssueContract.getAbbr().toStringUtf8());
 
           builder.endObject();
           indexRequest = new IndexRequest("asset_issue_contract", "asset_issue_contract",
@@ -186,9 +185,9 @@ public class Util {
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
           builder.field("date_created", transaction.getRawData().getTimestamp());
-          builder.field("amount", witnessCreateContract.getUrl());
+          builder.field("url", witnessCreateContract.getUrl().toStringUtf8());
           builder.endObject();
-          indexRequest = new IndexRequest("participate_asset_issue", "participate_asset_issue",
+          indexRequest = new IndexRequest("witness_create_contract", "witness_create_contract",
               Util.getTxID(transaction))
               .source(builder);
           list.add(indexRequest);
@@ -201,17 +200,49 @@ public class Util {
             builder.field("block", block.getBlockHeader().getRawData().getNumber());
             builder.field("hash", getTxID(transaction));
             builder.field("date_created", transaction.getRawData().getTimestamp());
-            builder.field("voter_address",
+            builder.field("owner_address",
                 WalletApi.encode58Check(Util.getOwner(contract)));
-            builder.field("candidate_address",
-                WalletApi.encode58Check(vote.getVoteAddress().toByteArray()));
-            builder.field("votes", vote.getVoteCount());
+
             builder.endObject();
-            indexRequest = new IndexRequest("participate_asset_issue", "participate_asset_issue",
+            indexRequest = new IndexRequest("vote_witness_contract", "vote_witness_contract",
                 WalletApi.encode58Check(vote.getVoteAddress().toByteArray()))
                 .source(builder);
             list.add(indexRequest);
           }
+          break;
+
+        case FreezeBalanceContract:
+          FreezeBalanceContract freezeBalanceContract = contract.getParameter()
+              .unpack(FreezeBalanceContract.class);
+
+          builder.field("block", block.getBlockHeader().getRawData().getNumber());
+          builder.field("hash", getTxID(transaction));
+          builder.field("date_created", block.getBlockHeader().getRawData().getTimestamp());
+          builder.field("owner_address", WalletApi.encode58Check(Util.getOwner(contract)));
+          builder.field("frozen_balance", freezeBalanceContract.getFrozenBalance());
+          builder.field("frozen_duration", freezeBalanceContract.getFrozenDuration());
+          builder.field("type", "FreezeBalanceContract");
+          builder.endObject();
+          indexRequest = new IndexRequest("freeze_balance_contract", "freeze_balance_contract",
+              Util.getTxID(transaction))
+              .source(builder);
+          list.add(indexRequest);
+          break;
+
+        case UnfreezeBalanceContract:
+          UnfreezeBalanceContract unfreezeBalanceContract = contract.getParameter()
+              .unpack(UnfreezeBalanceContract.class);
+
+          builder.field("block", block.getBlockHeader().getRawData().getNumber());
+          builder.field("hash", getTxID(transaction));
+          builder.field("date_created", block.getBlockHeader().getRawData().getTimestamp());
+          builder.field("owner_address", WalletApi.encode58Check(Util.getOwner(contract)));
+          builder.field("type", "WithdrawBalanceContract");
+          builder.endObject();
+          indexRequest = new IndexRequest("freeze_balance_contract", "freeze_balance_contract",
+              Util.getTxID(transaction))
+              .source(builder);
+          list.add(indexRequest);
           break;
 
         default:
