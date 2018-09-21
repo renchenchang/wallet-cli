@@ -119,6 +119,10 @@ public class EsImporter {
     System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber()
         + ", confirmed: " + !full);
 
+    if (block.getBlockHeader().getRawData().getNumber() == 2142) {
+      System.out.println("dafdsa");
+    }
+
     parseTransactions(block, full);
 
     XContentBuilder builder = XContentFactory.jsonBuilder();
@@ -276,6 +280,14 @@ public class EsImporter {
 
   private void resetDB() throws IOException {
     deleteIndex("blocks");
+    deleteIndex("asset_issue_contract");
+    deleteIndex("participate_asset_issue");
+    deleteIndex("transactions");
+    deleteIndex("transfers");
+    deleteIndex("witness_create_contract");
+    deleteIndex("vote_witness_contract");
+    deleteIndex(".kibana");
+    deleteIndex("freeze_balance_contract");
   }
 
   private long getCurrentConfirmedBlockNumberInDB() {
@@ -343,7 +355,7 @@ public class EsImporter {
           e.printStackTrace();
         }
       }, 2, 2, TimeUnit.SECONDS);
-      //  resetDB();
+    //  importer.resetDB();
     } catch (Exception e) {
       e.printStackTrace();
     }
