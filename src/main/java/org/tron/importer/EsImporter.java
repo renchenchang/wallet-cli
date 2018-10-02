@@ -20,17 +20,17 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.tron.api.GrpcAPI.BlockList;
 import org.tron.common.utils.ByteArray;
+import org.tron.protos.Protocol.Account;
 import org.tron.protos.Protocol.Block;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
@@ -70,6 +70,29 @@ public class EsImporter {
   private void bulkSave() throws IOException {
     client.bulk(blockBulk, RequestOptions.DEFAULT);
     blockBulk.requests().clear();
+  }
+
+  private void syncAddress() throws IOException {
+    for (String address : Util.addressList) {
+      Account account = WalletApi.queryAccount(WalletApi.decodeFromBase58Check(address));
+      UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
+            address);
+      updateRequest.upsert(JsonFormat.printToString(account), XContentType.JSON);
+      client.update(updateRequest, RequestOptions.DEFAULT);
+
+//      if (containAddress(address)) {
+//        UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
+//            address);
+//        updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
+//        client.update(updateRequest, RequestOptions.DEFAULT);
+//      } else {
+//        IndexRequest indexRequest = new IndexRequest("accounts", "accounts",
+//            address);
+//        indexRequest.source(JsonFormat.printToString(account), XContentType.JSON);
+//        client.index(indexRequest, RequestOptions.DEFAULT);
+//      }
+    }
+    Util.addressList.clear();
   }
 
 
@@ -222,7 +245,7 @@ public class EsImporter {
     }
 
     //sync address from solidity
-    WalletApi.queryAccount(null);
+    syncAddress();
 
     //sync data from full node
     long fullNode = getCurrentBlockInFull().getBlockHeader().getRawData().getNumber();
@@ -284,7 +307,6 @@ public class EsImporter {
     deleteIndex("transfers");
     deleteIndex("witness_create_contract");
     deleteIndex("vote_witness_contract");
-    deleteIndex(".kibana");
     deleteIndex("freeze_balance_contract");
   }
 
@@ -301,6 +323,21 @@ public class EsImporter {
 
     }
     return number;
+  }
+
+  public boolean containAddress(String address) {
+    boolean contain = false;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select * from accounts where address='" + address + "'");
+      if (results.next()) {
+        contain = true;
+      }
+    } catch (Exception e) {
+
+    }
+    return contain;
   }
 
   public long getCurrentProposalID() {

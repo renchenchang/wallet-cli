@@ -12,6 +12,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.protos.Contract;
@@ -63,7 +64,11 @@ public class Util {
     List<UpdateRequest> list = new ArrayList<>();
     Transaction.Contract contract = transaction.getRawData().getContract(0);
     String owner = WalletApi.encode58Check(getOwner(contract));
-   // ArrayList<String> to = getToAddress(contract);
+    ArrayList<String> to = getToAddress(contract);
+    if (!full) {
+      addressList.addAll(to);
+      addressList.add(owner);
+    }
     XContentBuilder builder = XContentFactory.jsonBuilder();
     builder.startObject();
     try {
@@ -76,7 +81,7 @@ public class Util {
           JSONObject jsonObject = new JSONObject();
           jsonObject.put("description", updateAssetContract.getDescription().toStringUtf8());
           jsonObject.put("url", updateAssetContract.getUrl().toStringUtf8());
-          request.doc(jsonObject.toJSONString(), "XContentType.JSON");
+          request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
         case WitnessUpdateContract:
@@ -86,7 +91,7 @@ public class Util {
               owner);
           jsonObject = new JSONObject();
           jsonObject.put("url", witnessUpdateContract.getUpdateUrl().toStringUtf8());
-          request.doc(jsonObject.toJSONString(), "XContentType.JSON");
+          request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
         case ProposalApproveContract:
@@ -104,7 +109,7 @@ public class Util {
             }
             jsonObject.put("approved", approved);
           }
-          request.doc(jsonObject.toJSONString(), "XContentType.JSON");
+          request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
         case ExchangeWithdrawContract:
@@ -122,7 +127,7 @@ public class Util {
             jsonObject.put("second_token_id", exchange.getSecondTokenId().toStringUtf8());
             jsonObject.put("second_token_balance", exchange.getSecondTokenBalance());
           }
-          request.doc(jsonObject.toJSONString(), "XContentType.JSON");
+          request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
 
@@ -134,7 +139,7 @@ public class Util {
           jsonObject = new JSONObject();
           jsonObject.put("consume_user_resource_percent",
               updateSettingContract.getConsumeUserResourcePercent());
-          request.doc(jsonObject.toJSONString(), "XContentType.JSON");
+          request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
 
@@ -155,6 +160,10 @@ public class Util {
     builder.startObject();
     String owner = WalletApi.encode58Check(getOwner(contract));
     ArrayList<String> to = getToAddress(contract);
+    if (!full) {
+      addressList.addAll(to);
+      addressList.add(owner);
+    }
     long createTime = transaction.getRawData().getTimestamp() == 0 ?
         block.getBlockHeader().getRawData().getTimestamp() : transaction.getRawData().getTimestamp();
     try {
@@ -408,7 +417,7 @@ public class Util {
     for (ByteString bytes : getTo(contract)) {
       list.add(WalletApi.encode58Check(bytes.toByteArray()));
     }
-    return null;
+    return list;
   }
 
   public static ArrayList<ByteString> getTo(Transaction.Contract contract) {

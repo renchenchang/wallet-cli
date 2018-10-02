@@ -16,7 +16,7 @@ import org.apache.http.util.EntityUtils;
 public class Http {
 
 
-  public static String doPost(String url, String sql, String charset)
+  public static String doPost(String url, String parameters, String charset)
       throws IOException {
 
     HttpClientBuilder builder = HttpClients.custom();
@@ -34,7 +34,7 @@ public class Http {
     httpPost.setConfig(requestConfig);
     CloseableHttpResponse response = null;
     httpPost.setHeader("Cookie", "__utma=226521935.73826752.1323672782.1325068020.1328770420.6;");
-    StringEntity postingString = new StringEntity(sql);//gson.tojson() converts your pojo to json
+    StringEntity postingString = new StringEntity(parameters);//gson.tojson() converts your pojo to json
     httpPost.setEntity(postingString);
     httpPost.addHeader("content-type", "application/json");
     response = httpClient.execute(httpPost);
