@@ -87,8 +87,7 @@ public class EsImporter {
       builder.field("block", block.getBlockHeader().getRawData().getNumber());
       builder.field("hash", Util.getTxID(transaction));
       builder.field("contract_data",
-          ByteArray
-              .toHexString(block.getBlockHeader().getRawData().toByteArray()));
+          JsonFormat.printToString(block.getBlockHeader().getRawData()));
       builder.field("contract_type", contractType);
       builder.field("owner_address",
           WalletApi.encode58Check(Util.getOwner(contract)));
@@ -120,10 +119,6 @@ public class EsImporter {
   private void parseBlock(Block block, boolean full) throws IOException {
     System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber()
         + ", confirmed: " + !full);
-
-    if (block.getBlockHeader().getRawData().getNumber() == 2142) {
-      System.out.println("dafdsa");
-    }
 
     parseTransactions(block, full);
 
@@ -228,6 +223,9 @@ public class EsImporter {
       bulkSave();
     }
 
+    //sync address from solidity
+    WalletApi.queryAccount(null);
+
     //sync data from full node
     long fullNode = getCurrentBlockInFull().getBlockHeader().getRawData().getNumber();
     long currentBlockInDB = getCurrentBlockNumberInDB();
@@ -292,6 +290,51 @@ public class EsImporter {
     deleteIndex("vote_witness_contract");
     deleteIndex(".kibana");
     deleteIndex("freeze_balance_contract");
+  }
+
+  public long getCurrentExchangeID() {
+    long number = 0;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select max(id) from exchanges");
+      while (results.next()) {
+        number = results.getLong(1);
+      }
+    } catch (Exception e) {
+
+    }
+    return number;
+  }
+
+  public long getCurrentProposalID() {
+    long number = 0;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select max(id) from proposals");
+      while (results.next()) {
+        number = results.getLong(1);
+      }
+    } catch (Exception e) {
+
+    }
+    return number;
+  }
+
+  public String getProposalApprovedList(long id) {
+    String approved = "";
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select approved from proposals where id=" + id);
+      while (results.next()) {
+        approved = results.getString(1);
+      }
+    } catch (Exception e) {
+
+    }
+    return approved;
   }
 
   private long getCurrentConfirmedBlockNumberInDB() {
