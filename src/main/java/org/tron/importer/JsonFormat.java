@@ -51,6 +51,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.tron.common.utils.ByteArray;
+import org.tron.walletserver.WalletApi;
 
 
 /**
@@ -701,7 +702,11 @@ public class JsonFormat {
    * sequences.
    */
   static String escapeBytes(ByteString input) {
-    return ByteArray.toHexString(input.toByteArray());
+    if (WalletApi.addressValid(input.toByteArray())) {
+      return WalletApi.encode58Check(input.toByteArray());
+    } else {
+      return ByteArray.toHexString(input.toByteArray());
+    }
   }
 
   static String unicodeEscaped(char ch) {

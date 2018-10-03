@@ -7,12 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -72,18 +68,26 @@ public class EsImporter {
     blockBulk.requests().clear();
   }
 
-  private void syncAddress() throws IOException {
+  public void syncAddress() throws IOException {
     for (String address : Util.addressList) {
+      System.out.println("sync address " + address);
       Account account = WalletApi.queryAccount(WalletApi.decodeFromBase58Check(address));
+
+      IndexRequest indexRequest = new IndexRequest("accounts", "accounts",
+            address);
+        indexRequest.source(JsonFormat.printToString(account), XContentType.JSON);
+
       UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
             address);
-      updateRequest.upsert(JsonFormat.printToString(account), XContentType.JSON);
+      updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
+      updateRequest.upsert(indexRequest);
       client.update(updateRequest, RequestOptions.DEFAULT);
 
 //      if (containAddress(address)) {
 //        UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
 //            address);
 //        updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
+//
 //        client.update(updateRequest, RequestOptions.DEFAULT);
 //      } else {
 //        IndexRequest indexRequest = new IndexRequest("accounts", "accounts",
@@ -300,14 +304,15 @@ public class EsImporter {
   }
 
   private void resetDB() throws IOException {
-    deleteIndex("blocks");
-    deleteIndex("asset_issue_contract");
-    deleteIndex("participate_asset_issue");
-    deleteIndex("transactions");
-    deleteIndex("transfers");
-    deleteIndex("witness_create_contract");
-    deleteIndex("vote_witness_contract");
-    deleteIndex("freeze_balance_contract");
+//    deleteIndex("blocks");
+//    deleteIndex("asset_issue_contract");
+//    deleteIndex("participate_asset_issue");
+//    deleteIndex("transactions");
+//    deleteIndex("transfers");
+//    deleteIndex("witness_create_contract");
+//    deleteIndex("vote_witness_contract");
+//    deleteIndex("freeze_balance_contract");
+    deleteIndex("accounts");
   }
 
   public long getCurrentExchangeID() {
@@ -426,16 +431,19 @@ public class EsImporter {
   public static void main(String[] args) {
     try {
       EsImporter importer = new EsImporter();
-      ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-      scheduledExecutorService.scheduleAtFixedRate(() -> {
-        try {
-          System.out.println("sync data from block chain at:" + new Date());
-          importer.loadDataFromNode();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }, 2, 2, TimeUnit.SECONDS);
-    //  importer.resetDB();
+//      ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+//      scheduledExecutorService.scheduleAtFixedRate(() -> {
+//        try {
+//          System.out.println("sync data from block chain at:" + new Date());
+//          importer.loadDataFromNode();
+//        } catch (Exception e) {
+//          e.printStackTrace();
+//        }
+//      }, 0, 2, TimeUnit.HOURS);
+
+      importer.resetDB();
+      Util.addressList.add("TY7s1dhNJSDmbGDxqRmNATQAr9iNpYv6TZ");
+      importer.syncAddress();
     } catch (Exception e) {
       e.printStackTrace();
     }
