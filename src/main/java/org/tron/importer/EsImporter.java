@@ -1,17 +1,12 @@
 package org.tron.importer;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -19,8 +14,6 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -35,38 +28,7 @@ import org.tron.walletserver.WalletApi;
 
 public class EsImporter {
 
-  private RestHighLevelClient client;
-  private Properties connectionProperties = new Properties();
-  private Connection dbConnection;
-  private BulkRequest blockBulk = new BulkRequest();
-
-  public EsImporter() {
-    try {
-      client = new RestHighLevelClient(
-          RestClient.builder(
-              new HttpHost("18.223.114.116", 9200, "http")
-          ));
-      blockBulk.setRefreshPolicy("wait_for");
-      blockBulk.timeout("2m");
-      dbConnection = DriverManager
-          .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-  }
-
-  private Connection getConn() throws SQLException {
-    if (dbConnection.isClosed()) {
-      dbConnection = DriverManager
-          .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
-    }
-    return dbConnection;
-  }
-
-  private void bulkSave() throws IOException {
-    client.bulk(blockBulk, RequestOptions.DEFAULT);
-    blockBulk.requests().clear();
-  }
+ private ConnectionTool connectionTool = new ConnectionTool();
 
   public void syncAddress() throws IOException {
     for (String address : Util.addressList) {
@@ -81,20 +43,7 @@ public class EsImporter {
             address);
       updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
       updateRequest.upsert(indexRequest);
-      client.update(updateRequest, RequestOptions.DEFAULT);
-
-//      if (containAddress(address)) {
-//        UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
-//            address);
-//        updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
-//
-//        client.update(updateRequest, RequestOptions.DEFAULT);
-//      } else {
-//        IndexRequest indexRequest = new IndexRequest("accounts", "accounts",
-//            address);
-//        indexRequest.source(JsonFormat.printToString(account), XContentType.JSON);
-//        client.index(indexRequest, RequestOptions.DEFAULT);
-//      }
+      connectionTool.client.update(updateRequest, RequestOptions.DEFAULT);
     }
     Util.addressList.clear();
   }
@@ -123,19 +72,19 @@ public class EsImporter {
       IndexRequest indexRequest = new IndexRequest("transactions", "transactions",
           Util.getTxID(transaction))
           .source(builder);
-      blockBulk.add(indexRequest);
+      connectionTool.blockBulk.add(indexRequest);
 
       List<UpdateRequest> updateList = Util.getUpdateBuilder(block, transaction, full);
       if (updateList != null) {
         for (UpdateRequest updateRequest : updateList) {
-          blockBulk.add(updateRequest);
+          connectionTool.blockBulk.add(updateRequest);
         }
       }
 
       List<IndexRequest> indexList = Util.getIndexBuilder(block, transaction, full);
       if (indexList != null) {
         for (IndexRequest request : indexList) {
-          blockBulk.add(request);
+          connectionTool.blockBulk.add(request);
         }
       }
     }
@@ -167,9 +116,9 @@ public class EsImporter {
     builder.endObject();
     IndexRequest indexRequest = new IndexRequest("blocks", "blocks", Util.getBlockID(block))
         .source(builder);
-    blockBulk.add(indexRequest);
-    if (blockBulk.numberOfActions() >= 5000) {
-      bulkSave();
+    connectionTool.blockBulk.add(indexRequest);
+    if (connectionTool.blockBulk.numberOfActions() >= 5000) {
+      connectionTool.bulkSave();
     }
   }
 
@@ -244,8 +193,8 @@ public class EsImporter {
       }
     }
 
-    if (blockBulk.numberOfActions() > 0) {
-      bulkSave();
+    if (connectionTool.blockBulk.numberOfActions() > 0) {
+      connectionTool.bulkSave();
     }
 
     //sync address from solidity
@@ -262,15 +211,15 @@ public class EsImporter {
         }
       }
     }
-    if (blockBulk.numberOfActions() > 0) {
-      bulkSave();
+    if (connectionTool.blockBulk.numberOfActions() > 0) {
+      connectionTool.bulkSave();
     }
   }
 
   public void deleteByID(String index, String type, String id) throws IOException {
     DeleteRequest request = new DeleteRequest(index, type, id);
     request.setRefreshPolicy("wait_for");
-    DeleteResponse deleteResponse = client.delete(request, RequestOptions.DEFAULT);
+    DeleteResponse deleteResponse = connectionTool.client.delete(request, RequestOptions.DEFAULT);
     ReplicationResponse.ShardInfo shardInfo = deleteResponse.getShardInfo();
     if (shardInfo.getFailed() > 0) {
       for (ReplicationResponse.ShardInfo.Failure failure : shardInfo.getFailures()) {
@@ -284,14 +233,14 @@ public class EsImporter {
     DeleteIndexRequest request = new DeleteIndexRequest(index);
     request.timeout("2m");
     request.indicesOptions(IndicesOptions.lenientExpandOpen());
-    client.indices().delete(request, RequestOptions.DEFAULT);
+    connectionTool.client.indices().delete(request, RequestOptions.DEFAULT);
   }
 
   private void checkIsSameChain() throws IOException {
     Block block = WalletApi.getBlock4Loader(1, false);
     String hash = "";
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement.executeQuery("select hash from blocks where number=1");
       while (results.next()) {
         hash = results.getString(1);
@@ -312,13 +261,14 @@ public class EsImporter {
 //    deleteIndex("witness_create_contract");
 //    deleteIndex("vote_witness_contract");
 //    deleteIndex("freeze_balance_contract");
-    deleteIndex("accounts");
+//    deleteIndex("accounts");
+    deleteIndex("statistics");
   }
 
   public long getCurrentExchangeID() {
     long number = 0;
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
           .executeQuery("select max(id) from exchanges");
       while (results.next()) {
@@ -333,7 +283,7 @@ public class EsImporter {
   public boolean containAddress(String address) {
     boolean contain = false;
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
           .executeQuery("select * from accounts where address='" + address + "'");
       if (results.next()) {
@@ -348,7 +298,7 @@ public class EsImporter {
   public long getCurrentProposalID() {
     long number = 0;
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
           .executeQuery("select max(id) from proposals");
       while (results.next()) {
@@ -363,7 +313,7 @@ public class EsImporter {
   public String getProposalApprovedList(long id) {
     String approved = "";
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
           .executeQuery("select approved from proposals where id=" + id);
       while (results.next()) {
@@ -378,7 +328,7 @@ public class EsImporter {
   private long getCurrentConfirmedBlockNumberInDB() {
     long number = 0;
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
           .executeQuery("select max(number) from blocks where confirmed=true");
       while (results.next()) {
@@ -393,7 +343,7 @@ public class EsImporter {
   private long getCurrentBlockNumberInDB() {
     long number = 0;
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement.executeQuery("select max(number) from blocks");
       while (results.next()) {
         number = results.getLong(1);
@@ -407,7 +357,7 @@ public class EsImporter {
   private String getCurrentBlockHashInDB(long number) {
     String hash = "";
     try {
-      Statement statement = getConn().createStatement();
+      Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement.executeQuery("select hash from blocks where number=" + number);
       while (results.next()) {
         hash = results.getString(1);
@@ -442,7 +392,7 @@ public class EsImporter {
 //      }, 0, 2, TimeUnit.HOURS);
 
       importer.resetDB();
-      Util.addressList.add("TY7s1dhNJSDmbGDxqRmNATQAr9iNpYv6TZ");
+      Util.addressList.add("TCDQ58ztmgdfkYCSJC9wybK28JCBpU7xN7");
       importer.syncAddress();
     } catch (Exception e) {
       e.printStackTrace();
