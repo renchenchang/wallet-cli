@@ -45,7 +45,7 @@ public class Statistic {
         count = results.getLong(1);
       }
     } catch (Exception e) {
-
+      e.printStackTrace();
     }
     return count;
   }
@@ -63,9 +63,24 @@ public class Statistic {
         count = results.getLong(1);
       }
     } catch (Exception e) {
-
+      e.printStackTrace();
     }
     return count;
+  }
+
+  private long getMaxBlockTimeInES() {
+    long time = startTime;
+    try {
+      Statement statement = connectionTool.getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select max(date_created) from blocks");
+      if (results.next()) {
+        time = results.getLong(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return time;
   }
 
   private long statisticBlockSize(long time) {
@@ -81,14 +96,15 @@ public class Statistic {
         count = results.getLong(1);
       }
     } catch (Exception e) {
-
+      e.printStackTrace();
     }
     return count;
   }
 
-  private void statistic() throws IOException {
+  public void statistic() throws IOException {
     long time = getNextStatisticTime();
-    while(time + 5 * 60 * 1000 < System.currentTimeMillis()) {
+    long blockTime = getMaxBlockTimeInES();
+    while(time + 5 * 60 * 1000 < System.currentTimeMillis() && time + 5 * 60 * 1000 < blockTime) {
       System.out.println("current time is " + time);
       long accountNum = statisticAccounts(time);
       long transactionNum = statisticTransactions(time);
@@ -106,7 +122,6 @@ public class Statistic {
       time = getNextStatisticTime() + 5 * 60 * 1000;
     }
   }
-
 
   public static void main(String[] args) {
     Statistic statistic = new Statistic();

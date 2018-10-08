@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -58,17 +59,40 @@ public class Util {
 
   public static ArrayList<String> addressList = new ArrayList<>();
   public static EsImporter importer = new EsImporter();
+  private static ConnectionTool connectionTool = new ConnectionTool();
+
+  public static void saveAddress(String address, long time) throws IOException {
+    XContentBuilder builder = XContentFactory.jsonBuilder();
+    builder.startObject();
+    builder.field("address", address);
+    builder.field("date_created", time);
+    builder.endObject();
+    IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
+        .source(builder);
+
+    UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
+        address);
+    updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
+    updateRequest.upsert(indexRequest);
+    connectionTool.client.update(updateRequest, RequestOptions.DEFAULT);
+  }
 
   public static List<UpdateRequest> getUpdateBuilder(Block block, Transaction transaction, boolean full)
       throws IOException {
     List<UpdateRequest> list = new ArrayList<>();
     Transaction.Contract contract = transaction.getRawData().getContract(0);
     String owner = WalletApi.encode58Check(getOwner(contract));
+    long time = block.getBlockHeader().getRawData().getTimestamp();
     ArrayList<String> to = getToAddress(contract);
     if (!full) {
-      addressList.addAll(to);
-      addressList.add(owner);
+//      addressList.addAll(to);
+//      addressList.add(owner);
+      saveAddress(owner, time);
+      for (String s : to) {
+        saveAddress(s, time);
+      }
     }
+
     XContentBuilder builder = XContentFactory.jsonBuilder();
     builder.startObject();
     try {
@@ -160,12 +184,16 @@ public class Util {
     builder.startObject();
     String owner = WalletApi.encode58Check(getOwner(contract));
     ArrayList<String> to = getToAddress(contract);
+    long createTime = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
-      addressList.addAll(to);
-      addressList.add(owner);
+//      addressList.addAll(to);
+//      addressList.add(owner);
+      saveAddress(owner, createTime);
+      for (String s : to) {
+        saveAddress(s, createTime);
+      }
     }
-    long createTime = transaction.getRawData().getTimestamp() == 0 ?
-        block.getBlockHeader().getRawData().getTimestamp() : transaction.getRawData().getTimestamp();
+
     try {
       switch (contract.getType()) {
         case TransferContract:

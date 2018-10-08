@@ -838,9 +838,9 @@ public class WalletApi {
       return false;
     }
     if (address.length != CommonConstant.ADDRESS_SIZE) {
-      logger.warn(
-          "Warning: Address length need " + CommonConstant.ADDRESS_SIZE + " but " + address.length
-              + " !!");
+//      logger.warn(
+//          "Warning: Address length need " + CommonConstant.ADDRESS_SIZE + " but " + address.length
+//              + " !!");
       return false;
     }
     byte preFixbyte = address[0];
