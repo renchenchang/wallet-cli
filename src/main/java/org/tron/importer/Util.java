@@ -6,11 +6,11 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -48,6 +48,7 @@ import org.tron.protos.Contract.VoteWitnessContract.Vote;
 import org.tron.protos.Contract.WithdrawBalanceContract;
 import org.tron.protos.Contract.WitnessCreateContract;
 import org.tron.protos.Contract.WitnessUpdateContract;
+import org.tron.protos.Protocol.Account;
 import org.tron.protos.Protocol.Block;
 import org.tron.protos.Protocol.Exchange;
 import org.tron.protos.Protocol.Key;
@@ -57,39 +58,62 @@ import org.tron.walletserver.WalletApi;
 
 public class Util {
 
-  public static ArrayList<String> addressList = new ArrayList<>();
+  public static HashSet<String> addressSet = new HashSet<>();
   public static EsImporter importer = new EsImporter();
-  private static ConnectionTool connectionTool = new ConnectionTool();
+  public static ConnectionTool connectionTool = new ConnectionTool();
 
-  public static void saveAddress(String address, long time) throws IOException {
-    XContentBuilder builder = XContentFactory.jsonBuilder();
-    builder.startObject();
-    builder.field("address", address);
-    builder.field("date_created", time);
-    builder.endObject();
-    IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
-        .source(builder);
+  public static List<UpdateRequest> getAddressBuilder(long time) throws IOException {
+    ArrayList<UpdateRequest> list = new ArrayList<>();
+    for(String address : addressSet) {
+      XContentBuilder builder = XContentFactory.jsonBuilder();
+      builder.startObject();
+      builder.field("address", address);
+      builder.field("date_created", time);
+      builder.endObject();
+      IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
+          .source(builder);
 
-    UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
-        address);
-    updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
-    updateRequest.upsert(indexRequest);
-    connectionTool.client.update(updateRequest, RequestOptions.DEFAULT);
+      UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
+          address);
+      updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
+      updateRequest.upsert(indexRequest);
+      list.add(updateRequest);
+    }
+    addressSet.clear();
+    return list;
   }
+
+  public static void syncAddress() throws IOException {
+    synchronized (addressSet) {
+      for (String address : addressSet) {
+        System.out.println("sync address " + address);
+        Account account = WalletApi.queryAccount(WalletApi.decodeFromBase58Check(address));
+        IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address);
+        indexRequest.source(JsonFormat.printToString(account), XContentType.JSON);
+
+        UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts", address);
+        updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
+        updateRequest.upsert(indexRequest);
+        connectionTool.blockBulk.add(updateRequest);
+      }
+      if (connectionTool.blockBulk.numberOfActions() > 0) {
+        connectionTool.bulkSave();
+      }
+      addressSet.clear();
+    }
+  }
+
 
   public static List<UpdateRequest> getUpdateBuilder(Block block, Transaction transaction, boolean full)
       throws IOException {
     List<UpdateRequest> list = new ArrayList<>();
     Transaction.Contract contract = transaction.getRawData().getContract(0);
     String owner = WalletApi.encode58Check(getOwner(contract));
-    long time = block.getBlockHeader().getRawData().getTimestamp();
     ArrayList<String> to = getToAddress(contract);
     if (!full) {
-//      addressList.addAll(to);
-//      addressList.add(owner);
-      saveAddress(owner, time);
-      for (String s : to) {
-        saveAddress(s, time);
+      synchronized (addressSet) {
+        addressSet.addAll(to);
+        addressSet.add(owner);
       }
     }
 
@@ -186,11 +210,9 @@ public class Util {
     ArrayList<String> to = getToAddress(contract);
     long createTime = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
-//      addressList.addAll(to);
-//      addressList.add(owner);
-      saveAddress(owner, createTime);
-      for (String s : to) {
-        saveAddress(s, createTime);
+      synchronized (addressSet) {
+        addressSet.addAll(to);
+        addressSet.add(owner);
       }
     }
 

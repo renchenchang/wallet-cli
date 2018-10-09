@@ -52,10 +52,8 @@ public class EsImporter {
     for (Transaction transaction : block.getTransactionsList()) {
       Transaction.Contract contract = transaction.getRawData().getContract(0);
       ContractType contractType = contract.getType();
-
       XContentBuilder builder = XContentFactory.jsonBuilder();
       builder.startObject();
-
       builder.field("date_created", transaction.getRawData().getTimestamp());
       builder.field("block", block.getBlockHeader().getRawData().getNumber());
       builder.field("hash", Util.getTxID(transaction));
@@ -66,7 +64,6 @@ public class EsImporter {
           WalletApi.encode58Check(Util.getOwner(contract)));
       builder.field("to_address", Util.getTo(contract));
       builder.field("confirmed", !full);
-
       builder.endObject();
       IndexRequest indexRequest = new IndexRequest("transactions", "transactions",
           Util.getTxID(transaction))
@@ -86,6 +83,13 @@ public class EsImporter {
           connectionTool.blockBulk.add(request);
         }
       }
+
+//      List<UpdateRequest> addressList = Util.getAddressBuilder(block.getBlockHeader().getRawData().getTimestamp());
+//      if (addressList != null) {
+//        for (UpdateRequest request : addressList) {
+//          connectionTool.blockBulk.add(request);
+//        }
+//      }
     }
   }
 
@@ -116,13 +120,13 @@ public class EsImporter {
     IndexRequest indexRequest = new IndexRequest("blocks", "blocks", Util.getBlockID(block))
         .source(builder);
     connectionTool.blockBulk.add(indexRequest);
-    if (connectionTool.blockBulk.numberOfActions() >= 5000) {
+
+    if (connectionTool.blockBulk.numberOfActions() >= 10000) {
       connectionTool.bulkSave();
     }
   }
 
   private void insert(Block block, boolean full) throws IOException {
-
     XContentBuilder builder = XContentFactory.jsonBuilder();
     builder.startObject();
     builder.field("hash", "000000000016e3601415515ff82f21d37193b5c7731590ea4f4f02b8635e77a2");
@@ -284,6 +288,7 @@ public class EsImporter {
     deleteIndex("accounts");
     deleteIndex("statistics");
     deleteIndex("test");
+    deleteIndex("proposals");
 
     deleteIndex(".security-6 ");
     deleteIndex(".security");
@@ -405,23 +410,31 @@ public class EsImporter {
   public static void main(String[] args) {
     try {
       EsImporter importer = new EsImporter();
+      Statistic statistic = new Statistic();
 //      importer.resetDB();
 //      importer.insert(null, false);
       if (args[0].equalsIgnoreCase("reset")) {
         importer.resetDB();
       }
       else {
-        Statistic statistic = new Statistic();
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
           try {
             System.out.println("sync data from block chain at:" + new Date());
             importer.loadDataFromNode();
-            statistic.statistic();
           } catch (Exception e) {
             e.printStackTrace();
           }
         }, 0, 2, TimeUnit.SECONDS);
+
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+          try {
+            System.out.println("sync address from block chain at:" + new Date());
+            Util.syncAddress();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }, 0, 30, TimeUnit.SECONDS);
       }
 
     } catch (Exception e) {
