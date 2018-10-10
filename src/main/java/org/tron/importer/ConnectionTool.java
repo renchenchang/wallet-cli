@@ -23,7 +23,8 @@ public class ConnectionTool {
       client = new RestHighLevelClient(
           RestClient.builder(
               new HttpHost("18.223.114.116", 9200, "http")
-          ));
+          ).setMaxRetryTimeoutMillis(90000000)
+      );
       blockBulk.setRefreshPolicy("wait_for");
       blockBulk.timeout("2m");
       dbConnection = DriverManager

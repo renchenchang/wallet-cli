@@ -93,13 +93,16 @@ public class Util {
         builder.startObject();
         builder.field("address", address);
         builder.field("date_created", time);
+        builder.field("need_update", 1);
         builder.endObject();
         IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
             .source(builder);
 
         UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
             address);
-        updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("need_update", 1);
+        updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
         updateRequest.upsert(indexRequest);
         connectionTool.blockBulk.add(updateRequest);
       }

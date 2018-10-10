@@ -32,22 +32,6 @@ public class EsImporter {
 
  private ConnectionTool connectionTool = new ConnectionTool();
 
-//  public void syncAddress() throws IOException {
-//    for (String address : Util.addressList) {
-//      System.out.println("sync address " + address);
-//      Account account = WalletApi.queryAccount(WalletApi.decodeFromBase58Check(address));
-//      IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address);
-//      indexRequest.source(JsonFormat.printToString(account), XContentType.JSON);
-//
-//      UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts", address);
-//      updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
-//      updateRequest.upsert(indexRequest);
-//      connectionTool.client.update(updateRequest, RequestOptions.DEFAULT);
-//    }
-//    Util.addressList.clear();
-//  }
-
-
   private void parseTransactions(Block block, boolean full) throws IOException {
     for (Transaction transaction : block.getTransactionsList()) {
       Transaction.Contract contract = transaction.getRawData().getContract(0);
@@ -411,13 +395,13 @@ public class EsImporter {
     try {
       EsImporter importer = new EsImporter();
       Statistic statistic = new Statistic();
-//      importer.resetDB();
-//      importer.insert(null, false);
+      UpdateAccount updateAccount = new UpdateAccount();
+
       if (args[0].equalsIgnoreCase("reset")) {
         importer.resetDB();
       }
       else {
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
           try {
             System.out.println("sync data from block chain at:" + new Date());
@@ -435,6 +419,24 @@ public class EsImporter {
             e.printStackTrace();
           }
         }, 0, 30, TimeUnit.SECONDS);
+
+//        scheduledExecutorService.scheduleAtFixedRate(() -> {
+//          try {
+//            System.out.println("statistic at:" + new Date());
+//            statistic.statistic();
+//          } catch (Exception e) {
+//            e.printStackTrace();
+//          }
+//        }, 0, 30, TimeUnit.SECONDS);
+
+//        scheduledExecutorService.scheduleAtFixedRate(() -> {
+//          try {
+//            System.out.println("update accounts at:" + new Date());
+//            updateAccount.UpdateAccouts();
+//          } catch (Exception e) {
+//            e.printStackTrace();
+//          }
+//        }, 0, 2, TimeUnit.SECONDS);
       }
 
     } catch (Exception e) {
