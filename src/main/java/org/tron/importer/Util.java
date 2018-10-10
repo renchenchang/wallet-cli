@@ -6,8 +6,9 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -48,7 +49,6 @@ import org.tron.protos.Contract.VoteWitnessContract.Vote;
 import org.tron.protos.Contract.WithdrawBalanceContract;
 import org.tron.protos.Contract.WitnessCreateContract;
 import org.tron.protos.Contract.WitnessUpdateContract;
-import org.tron.protos.Protocol.Account;
 import org.tron.protos.Protocol.Block;
 import org.tron.protos.Protocol.Exchange;
 import org.tron.protos.Protocol.Key;
@@ -58,51 +58,57 @@ import org.tron.walletserver.WalletApi;
 
 public class Util {
 
-  public static HashSet<String> addressSet = new HashSet<>();
+  public static HashMap<String, Long> address = new HashMap<>();
   public static EsImporter importer = new EsImporter();
   public static ConnectionTool connectionTool = new ConnectionTool();
 
-  public static List<UpdateRequest> getAddressBuilder(long time) throws IOException {
-    ArrayList<UpdateRequest> list = new ArrayList<>();
-    for(String address : addressSet) {
-      XContentBuilder builder = XContentFactory.jsonBuilder();
-      builder.startObject();
-      builder.field("address", address);
-      builder.field("date_created", time);
-      builder.endObject();
-      IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
-          .source(builder);
-
-      UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
-          address);
-      updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
-      updateRequest.upsert(indexRequest);
-      list.add(updateRequest);
-    }
-    addressSet.clear();
-    return list;
-  }
+//  public static List<UpdateRequest> getAddressBuilder(long time) throws IOException {
+//    ArrayList<UpdateRequest> list = new ArrayList<>();
+//    for(String address : addressSet) {
+//      XContentBuilder builder = XContentFactory.jsonBuilder();
+//      builder.startObject();
+//      builder.field("address", address);
+//      builder.field("date_created", time);
+//      builder.endObject();
+//      IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
+//          .source(builder);
+//
+//      UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
+//          address);
+//      updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
+//      updateRequest.upsert(indexRequest);
+//      list.add(updateRequest);
+//    }
+//    addressSet.clear();
+//    return list;
+//  }
 
   public static void syncAddress() throws IOException {
-    synchronized (addressSet) {
-      for (String address : addressSet) {
+    synchronized (address) {
+      for (Entry<String, Long> stringLongEntry : address.entrySet()) {
+        String address = stringLongEntry.getKey();
+        long time = stringLongEntry.getValue();
         System.out.println("sync address " + address);
-        Account account = WalletApi.queryAccount(WalletApi.decodeFromBase58Check(address));
-        IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address);
-        indexRequest.source(JsonFormat.printToString(account), XContentType.JSON);
+        XContentBuilder builder = XContentFactory.jsonBuilder();
+        builder.startObject();
+        builder.field("address", address);
+        builder.field("date_created", time);
+        builder.endObject();
+        IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
+            .source(builder);
 
-        UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts", address);
-        updateRequest.doc(JsonFormat.printToString(account), XContentType.JSON);
+        UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
+            address);
+        updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
         updateRequest.upsert(indexRequest);
         connectionTool.blockBulk.add(updateRequest);
       }
       if (connectionTool.blockBulk.numberOfActions() > 0) {
         connectionTool.bulkSave();
       }
-      addressSet.clear();
+      address.clear();
     }
   }
-
 
   public static List<UpdateRequest> getUpdateBuilder(Block block, Transaction transaction, boolean full)
       throws IOException {
@@ -110,10 +116,13 @@ public class Util {
     Transaction.Contract contract = transaction.getRawData().getContract(0);
     String owner = WalletApi.encode58Check(getOwner(contract));
     ArrayList<String> to = getToAddress(contract);
+    long time = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
-      synchronized (addressSet) {
-        addressSet.addAll(to);
-        addressSet.add(owner);
+      synchronized (address) {
+        address.put(owner, time);
+        for (String s : to) {
+          address.put(s, time);
+        }
       }
     }
 
@@ -210,9 +219,11 @@ public class Util {
     ArrayList<String> to = getToAddress(contract);
     long createTime = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
-      synchronized (addressSet) {
-        addressSet.addAll(to);
-        addressSet.add(owner);
+      synchronized (address) {
+        address.put(owner, createTime);
+        for (String s : to) {
+          address.put(s, createTime);
+        }
       }
     }
 
@@ -257,7 +268,7 @@ public class Util {
           builder.field("abbr", assetIssueContract.getAbbr().toStringUtf8());
           builder.endObject();
           indexRequest = new IndexRequest("asset_issue_contract", "asset_issue_contract",
-              WalletApi.encode58Check(Util.getOwner(contract)))
+              owner)
               .source(builder);
           list.add(indexRequest);
           break;
@@ -274,7 +285,7 @@ public class Util {
           builder.field("amount", participateAssetIssueContract.getAmount());
           builder.endObject();
           indexRequest = new IndexRequest("participate_asset_issue", "participate_asset_issue",
-              participateAssetIssueContract.getAssetName().toStringUtf8())
+              Util.getTxID(transaction))
               .source(builder);
           list.add(indexRequest);
           break;
@@ -288,8 +299,7 @@ public class Util {
           builder.field("date_created", transaction.getRawData().getTimestamp());
           builder.field("url", witnessCreateContract.getUrl().toStringUtf8());
           builder.endObject();
-          indexRequest = new IndexRequest("witness_create_contract", "witness_create_contract",
-              Util.getTxID(transaction))
+          indexRequest = new IndexRequest("witness_create_contract", "witness_create_contract", owner)
               .source(builder);
           list.add(indexRequest);
           break;
@@ -308,7 +318,7 @@ public class Util {
 
             builder.endObject();
             indexRequest = new IndexRequest("vote_witness_contract", "vote_witness_contract",
-                WalletApi.encode58Check(vote.getVoteAddress().toByteArray()))
+                Util.getTxID(transaction))
                 .source(builder);
             list.add(indexRequest);
           }
@@ -366,7 +376,7 @@ public class Util {
           builder.field("confirmed", !full);
           builder.endObject();
           indexRequest = new IndexRequest("exchange_transactions", "exchange_transactions",
-              (importer.getCurrentExchangeID() + 1) + "")
+              Util.getTxID(transaction))
               .source(builder);
           list.add(indexRequest);
           break;
@@ -393,8 +403,7 @@ public class Util {
           builder.field("name", createSmartContract.getNewContract().getName());
           builder.field("confirmed", !full);
           builder.endObject();
-          indexRequest = new IndexRequest("smart_contracts", "smart_contracts",
-              contractAddress)
+          indexRequest = new IndexRequest("smart_contracts", "smart_contracts", contractAddress)
               .source(builder);
           list.add(indexRequest);
           break;
@@ -414,7 +423,7 @@ public class Util {
           builder.field("confirmed", !full);
           builder.endObject();
           indexRequest = new IndexRequest("smart_contract_triggers", "smart_contract_triggers",
-              contractCallAddress)
+              Util.getTxID(transaction))
               .source(builder);
           list.add(indexRequest);
           break;
