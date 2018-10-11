@@ -401,32 +401,32 @@ public class EsImporter {
       }
       else {
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
-//        scheduledExecutorService.scheduleAtFixedRate(() -> {
-//          try {
-//            System.out.println("sync data from block chain at:" + new Date());
-//            importer.loadDataFromNode();
-//          } catch (Exception e) {
-//            e.printStackTrace();
-//          }
-//        }, 0, 2, TimeUnit.SECONDS);
-//
-//        scheduledExecutorService.scheduleAtFixedRate(() -> {
-//          try {
-//            System.out.println("sync address from block chain at:" + new Date());
-//            Util.syncAddress();
-//          } catch (Exception e) {
-//            e.printStackTrace();
-//          }
-//        }, 0, 30, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+          try {
+            System.out.println("sync data from block chain at:" + new Date());
+            importer.loadDataFromNode();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }, 0, 2, TimeUnit.SECONDS);
 
-//        scheduledExecutorService.scheduleAtFixedRate(() -> {
-//          try {
-//            System.out.println("statistic at:" + new Date());
-//            statistic.statistic();
-//          } catch (Exception e) {
-//            e.printStackTrace();
-//          }
-//        }, 0, 30, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+          try {
+            System.out.println("sync address from block chain at:" + new Date());
+            Util.syncAddress();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }, 0, 30, TimeUnit.SECONDS);
+
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+          try {
+            System.out.println("statistic at:" + new Date());
+            statistic.statistic();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }, 8 * 60 * 60, 30, TimeUnit.SECONDS);
 
         scheduledExecutorService.scheduleAtFixedRate(() -> {
           try {
@@ -435,7 +435,7 @@ public class EsImporter {
           } catch (Exception e) {
             e.printStackTrace();
           }
-        }, 0, 2, TimeUnit.SECONDS);
+        }, 8 * 60 * 60, 2, TimeUnit.SECONDS);
       }
 
     } catch (Exception e) {
