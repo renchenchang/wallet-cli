@@ -141,7 +141,7 @@ public class Statistic {
       updateRequest.upsert(indexRequest);
       connectionTool.client.update(updateRequest, RequestOptions.DEFAULT);
       time = getMaxStatisticTime() + period;
-      if (time + period > maxBlockTime) {
+      if (!end) {
         break;
       }
     }

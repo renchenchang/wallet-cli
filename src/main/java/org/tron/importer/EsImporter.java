@@ -41,12 +41,11 @@ public class EsImporter {
       builder.field("date_created", transaction.getRawData().getTimestamp());
       builder.field("block", block.getBlockHeader().getRawData().getNumber());
       builder.field("hash", Util.getTxID(transaction));
-      builder.field("contract_data",
-          JsonFormat.printToString(block.getBlockHeader().getRawData()));
+      builder.field("contract_data", Util.printTransactionToJSON(transaction));
       builder.field("contract_type", contractType);
       builder.field("owner_address",
           WalletApi.encode58Check(Util.getOwner(contract)));
-      builder.field("to_address", Util.getTo(contract));
+      builder.field("to_address", Util.getToAddress(contract));
       builder.field("confirmed", !full);
       builder.endObject();
       IndexRequest indexRequest = new IndexRequest("transactions", "transactions",
@@ -113,7 +112,7 @@ public class EsImporter {
   private void insert(Block block, boolean full) throws IOException {
     XContentBuilder builder = XContentFactory.jsonBuilder();
     builder.startObject();
-    builder.field("hash", "000000000016e3601415515ff82f21d37193b5c7731590ea4f4f02b8635e77a2");
+    builder.field("hash", "qqqqq");
     builder.field("number", 1500000L);
     builder.field("witness_address", "sss");
     builder.field("parent_hash", "dddd");
@@ -124,7 +123,7 @@ public class EsImporter {
     builder.field("size", 123);
     builder.field("confirmed", true);
     builder.endObject();
-    IndexRequest indexRequest = new IndexRequest("blocks", "blocks", "000000000016e3601415515ff82f21d37193b5c7731590ea4f4f02b8635e77a2")
+    IndexRequest indexRequest = new IndexRequest("abcd", "abcd", "qqqqq")
         .source(builder);
     connectionTool.client.index(indexRequest, RequestOptions.DEFAULT);
   }
@@ -397,28 +396,28 @@ public class EsImporter {
       Statistic statistic = new Statistic();
       UpdateAccount updateAccount = new UpdateAccount();
 
-      if (args[0].equalsIgnoreCase("reset")) {
+      if (args[0].equalsIgnoreCase("reset1")) {
         importer.resetDB();
       }
       else {
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-          try {
-            System.out.println("sync data from block chain at:" + new Date());
-            importer.loadDataFromNode();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }, 0, 2, TimeUnit.SECONDS);
-
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-          try {
-            System.out.println("sync address from block chain at:" + new Date());
-            Util.syncAddress();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }, 0, 30, TimeUnit.SECONDS);
+//        scheduledExecutorService.scheduleAtFixedRate(() -> {
+//          try {
+//            System.out.println("sync data from block chain at:" + new Date());
+//            importer.loadDataFromNode();
+//          } catch (Exception e) {
+//            e.printStackTrace();
+//          }
+//        }, 0, 2, TimeUnit.SECONDS);
+//
+//        scheduledExecutorService.scheduleAtFixedRate(() -> {
+//          try {
+//            System.out.println("sync address from block chain at:" + new Date());
+//            Util.syncAddress();
+//          } catch (Exception e) {
+//            e.printStackTrace();
+//          }
+//        }, 0, 30, TimeUnit.SECONDS);
 
 //        scheduledExecutorService.scheduleAtFixedRate(() -> {
 //          try {
@@ -429,14 +428,14 @@ public class EsImporter {
 //          }
 //        }, 0, 30, TimeUnit.SECONDS);
 
-//        scheduledExecutorService.scheduleAtFixedRate(() -> {
-//          try {
-//            System.out.println("update accounts at:" + new Date());
-//            updateAccount.UpdateAccouts();
-//          } catch (Exception e) {
-//            e.printStackTrace();
-//          }
-//        }, 0, 2, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+          try {
+            System.out.println("update accounts at:" + new Date());
+            updateAccount.UpdateAccouts();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }, 0, 2, TimeUnit.SECONDS);
       }
 
     } catch (Exception e) {
