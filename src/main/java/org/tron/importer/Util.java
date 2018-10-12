@@ -215,6 +215,21 @@ public class Util {
     }
   }
 
+  public static byte[] generateContractAddress(Transaction trx) {
+
+    CreateSmartContract contract = ContractCapsule.getSmartContractFromTransaction(trx);
+    byte[] ownerAddress = contract.getOwnerAddress().toByteArray();
+
+    byte[] txRawDataHash = Sha256Hash.hash(trx.getRawData().toByteArray());
+
+    byte[] combined = new byte[txRawDataHash.length + ownerAddress.length];
+    System.arraycopy(txRawDataHash, 0, combined, 0, txRawDataHash.length);
+    System.arraycopy(ownerAddress, 0, combined, txRawDataHash.length, ownerAddress.length);
+
+    return Hash.sha3omit12(combined);
+
+  }
+
   public static List<IndexRequest> getIndexBuilder(Block block, Transaction transaction,
       boolean full) throws IOException {
     List<IndexRequest> list = new ArrayList<>();
@@ -390,8 +405,7 @@ public class Util {
         case CreateSmartContract:
           CreateSmartContract createSmartContract =
               contract.getParameter().unpack(CreateSmartContract.class);
-          String contractAddress = WalletApi.encode58Check(
-              createSmartContract.getNewContract().getContractAddress().toByteArray());
+          String contractAddress = WalletApi.encode58Check(generateContractAddress(transaction));
           builder.field("owner_address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));

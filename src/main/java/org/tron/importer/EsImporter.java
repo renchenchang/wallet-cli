@@ -259,7 +259,7 @@ public class EsImporter {
     }
   }
 
-  private void resetDB() throws IOException {
+  public void resetDB() throws IOException {
     deleteIndex("blocks");
     deleteIndex("asset_issue_contract");
     deleteIndex("participate_asset_issue");
@@ -380,6 +380,24 @@ public class EsImporter {
     return hash;
   }
 
+  public void delteBlocks(long from) {
+    try {
+      String hash = "";
+      Statement statement = connectionTool.getConn().createStatement();
+      ResultSet results = statement.executeQuery("select hash, number from blocks where number>=" + from);
+      while (results.next()) {
+        long number = results.getLong(2);
+        hash = results.getString(1);
+        System.out.println(number);
+        DeleteRequest request = new DeleteRequest("blocks", "blocks", hash);
+        connectionTool.blockBulk.add(request);
+      }
+      connectionTool.bulkSave();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private Block getCurrentBlockInSolidity() {
     Block block = WalletApi.getBlock4Loader(-1, false);
     return block;
@@ -395,49 +413,42 @@ public class EsImporter {
       EsImporter importer = new EsImporter();
       Statistic statistic = new Statistic();
       UpdateAccount updateAccount = new UpdateAccount();
+      ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
+      scheduledExecutorService.scheduleAtFixedRate(() -> {
+        try {
+          System.out.println("sync data from block chain at:" + new Date());
+          importer.loadDataFromNode();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, 0, 2, TimeUnit.SECONDS);
 
-      if (args[0].equalsIgnoreCase("reset1")) {
-        importer.resetDB();
-      }
-      else {
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-          try {
-            System.out.println("sync data from block chain at:" + new Date());
-            importer.loadDataFromNode();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }, 0, 2, TimeUnit.SECONDS);
+      scheduledExecutorService.scheduleAtFixedRate(() -> {
+        try {
+          System.out.println("sync address from block chain at:" + new Date());
+          Util.syncAddress();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, 0, 30, TimeUnit.SECONDS);
 
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-          try {
-            System.out.println("sync address from block chain at:" + new Date());
-            Util.syncAddress();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }, 0, 30, TimeUnit.SECONDS);
+      scheduledExecutorService.scheduleAtFixedRate(() -> {
+        try {
+          System.out.println("statistic at:" + new Date());
+          statistic.statistic();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, 8 * 60 * 60, 30, TimeUnit.SECONDS);
 
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-          try {
-            System.out.println("statistic at:" + new Date());
-            statistic.statistic();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }, 8 * 60 * 60, 30, TimeUnit.SECONDS);
-
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-          try {
-            System.out.println("update accounts at:" + new Date());
-            updateAccount.UpdateAccouts();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }, 8 * 60 * 60, 2, TimeUnit.SECONDS);
-      }
-
+      scheduledExecutorService.scheduleAtFixedRate(() -> {
+        try {
+          System.out.println("update accounts at:" + new Date());
+          updateAccount.UpdateAccouts();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, 8 * 60 * 60, 2, TimeUnit.SECONDS);
     } catch (Exception e) {
       e.printStackTrace();
     }
