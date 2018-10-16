@@ -389,7 +389,7 @@ public class EsImporter {
     return hash;
   }
 
-  public void delteBlocks(long from) {
+  public void delteBlocksFrom(long from) {
     try {
       String hash = "";
       Statement statement = connectionTool.getConn().createStatement();

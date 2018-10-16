@@ -8,8 +8,8 @@ public class Reset {
 
   public static void main(String[] args) throws IOException {
     EsImporter esImporter = new EsImporter();
-    esImporter.resetDB();
-  //  esImporter.delteBlocks(3110000);
+    //esImporter.resetDB();
+    esImporter.delteBlocksFrom(3240000);
 
   }
 }
