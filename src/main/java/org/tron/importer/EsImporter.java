@@ -37,9 +37,7 @@ public class EsImporter {
       Transaction.Contract contract = transaction.getRawData().getContract(0);
       ContractType contractType = contract.getType();
       XContentBuilder builder = XContentFactory.jsonBuilder();
-      long createTime = transaction.getRawData().getTimestamp() == 0 ?
-          block.getBlockHeader().getRawData().getTimestamp() : transaction.getRawData().getTimestamp();
-      createTime = Util.getTimeInMillionSecond(createTime);
+      long createTime = block.getBlockHeader().getRawData().getTimestamp();
       builder.startObject();
       builder.field("date_created", createTime);
       builder.field("block", block.getBlockHeader().getRawData().getNumber());

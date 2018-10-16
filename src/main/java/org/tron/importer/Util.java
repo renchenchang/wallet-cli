@@ -134,9 +134,13 @@ public class Util {
     long time = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
       synchronized (address) {
-        address.put(owner, time);
+        if (!address.containsKey(owner)) {
+          address.put(owner, time);
+        }
         for (String s : to) {
-          address.put(s, time);
+          if (!address.containsKey(owner)) {
+            address.put(s, time);
+          }
         }
       }
     }
@@ -277,18 +281,19 @@ public class Util {
     builder.startObject();
     String owner = WalletApi.encode58Check(getOwner(contract));
     ArrayList<String> to = getToAddress(contract);
-    long createTime = block.getBlockHeader().getRawData().getTimestamp();
+    long transactionTime = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
       synchronized (address) {
-        address.put(owner, createTime);
+        if (!address.containsKey(owner)) {
+          address.put(owner, transactionTime);
+        }
         for (String s : to) {
-          address.put(s, createTime);
+          if (!address.containsKey(owner)) {
+            address.put(s, transactionTime);
+          }
         }
       }
     }
-    long transactionTime = transaction.getRawData().getTimestamp() == 0 ?
-        block.getBlockHeader().getRawData().getTimestamp() : transaction.getRawData().getTimestamp();
-    transactionTime = Util.getTimeInMillionSecond(transactionTime);
     try {
       switch (contract.getType()) {
         case TransferContract:
