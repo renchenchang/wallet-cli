@@ -38,6 +38,42 @@ public class Statistic {
     return time ;
   }
 
+  private long statisticContracts(long time) {
+    long count = 0;
+    long startTime = time;
+    long endTime = time + period;
+    try {
+      Statement statement = connectionTool.getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select count(*) from smart_contracts where date_created>="
+              + startTime + " and date_created<" + endTime);
+      if (results.next()) {
+        count = results.getLong(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return count;
+  }
+
+  private long statisticTriggers(long time) {
+    long count = 0;
+    long startTime = time;
+    long endTime = time + period;
+    try {
+      Statement statement = connectionTool.getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select count(*) from smart_contract_triggers where date_created>="
+              + startTime + " and date_created<" + endTime);
+      if (results.next()) {
+        count = results.getLong(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return count;
+  }
+
   private long statisticAccounts(long time) {
     long count = 0;
     long startTime = time;
@@ -118,6 +154,8 @@ public class Statistic {
       long accountNum = statisticAccounts(time);
       long transactionNum = statisticTransactions(time);
       long blockSize = statisticBlockSize(time);
+      long contractNum = statisticContracts(time);
+      long triggerNum = statisticTriggers(time);
       boolean end = (time + period) <= maxBlockTime ? true : false;
       XContentBuilder builder = XContentFactory.jsonBuilder();
       builder.startObject();
@@ -125,6 +163,8 @@ public class Statistic {
       builder.field("accounts", accountNum);
       builder.field("transactions", transactionNum);
       builder.field("block_size", blockSize);
+      builder.field("contracts", contractNum);
+      builder.field("triggers", triggerNum);
       builder.field("day", day);
       builder.field("end", end);
       builder.endObject();

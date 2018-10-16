@@ -86,6 +86,15 @@ public class Util {
 //    return list;
 //  }
 
+  public static long getTimeInMillionSecond(long time) {
+    String sTime = time + "";
+    if (sTime.length() > 13) {
+      return Long.parseLong(sTime.substring(0,13));
+    } else {
+      return time;
+    }
+  }
+
   public static void syncAddress() throws IOException {
     synchronized (address) {
       for (Entry<String, Long> stringLongEntry : address.entrySet()) {
@@ -247,22 +256,42 @@ public class Util {
         }
       }
     }
-
+    long transactionTime = transaction.getRawData().getTimestamp() == 0 ?
+        block.getBlockHeader().getRawData().getTimestamp() : transaction.getRawData().getTimestamp();
+    transactionTime = Util.getTimeInMillionSecond(transactionTime);
     try {
       switch (contract.getType()) {
         case TransferContract:
           TransferContract transferContract = contract.getParameter()
               .unpack(TransferContract.class);
-          builder.field("date_created", transaction.getRawData().getTimestamp());
+          builder.field("date_created", transactionTime);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", Util.getTxID(transaction));
           builder.field("owner_address",owner);
-          builder.field("to_address", to);
+          builder.field("to_address", to.get(0));
           builder.field("confirmed", !full);
           builder.field("token_name", "trx");
           builder.field("amount", transferContract.getAmount());
           builder.endObject();
           IndexRequest indexRequest = new IndexRequest("transfers", "transfers",
+              Util.getTxID(transaction))
+              .source(builder);
+          list.add(indexRequest);
+          break;
+
+        case TransferAssetContract:
+          TransferAssetContract transferAssetContract = contract.getParameter()
+              .unpack(TransferAssetContract.class);
+          builder.field("date_created", transactionTime);
+          builder.field("block", block.getBlockHeader().getRawData().getNumber());
+          builder.field("hash", Util.getTxID(transaction));
+          builder.field("owner_address",owner);
+          builder.field("to_address", to.get(0));
+          builder.field("confirmed", !full);
+          builder.field("token_name", transferAssetContract.getAssetName().toStringUtf8());
+          builder.field("amount", transferAssetContract.getAmount());
+          builder.endObject();
+          indexRequest = new IndexRequest("transfers", "transfers",
               Util.getTxID(transaction))
               .source(builder);
           list.add(indexRequest);
@@ -284,7 +313,7 @@ public class Util {
           builder.field("url", assetIssueContract.getUrl().toStringUtf8());
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", transaction.getRawData().getTimestamp());
+          builder.field("date_created", transactionTime);
           builder.field("frozen", "");
           builder.field("abbr", assetIssueContract.getAbbr().toStringUtf8());
           builder.endObject();
@@ -300,8 +329,8 @@ public class Util {
           builder.field("owner_address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", transaction.getRawData().getTimestamp());
-          builder.field("to_address", to);
+          builder.field("date_created", transactionTime);
+          builder.field("to_address", to.get(0));
           builder.field("token_name", participateAssetIssueContract.getAssetName().toStringUtf8());
           builder.field("amount", participateAssetIssueContract.getAmount());
           builder.endObject();
@@ -317,7 +346,7 @@ public class Util {
           builder.field("address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", transaction.getRawData().getTimestamp());
+          builder.field("date_created", transactionTime);
           builder.field("url", witnessCreateContract.getUrl().toStringUtf8());
           builder.endObject();
           indexRequest = new IndexRequest("witness_create_contract", "witness_create_contract", owner)
@@ -332,7 +361,7 @@ public class Util {
             String toAddress = WalletApi.encode58Check(vote.getVoteAddress().toByteArray());
             builder.field("block", block.getBlockHeader().getRawData().getNumber());
             builder.field("hash", getTxID(transaction));
-            builder.field("date_created", createTime);
+            builder.field("date_created", transactionTime);
             builder.field("owner_address", owner);
             builder.field("candidate_address", toAddress);
             builder.field("vote_count", vote.getVoteCount());
@@ -351,7 +380,7 @@ public class Util {
           builder.field("owner_address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", createTime);
+          builder.field("date_created", transactionTime);
           builder.field("parameters", JsonFormat.printToString(proposalCreateContract));
           builder.field("approved", "");
           builder.field("id", (importer.getCurrentProposalID() + 1) + "");
@@ -369,7 +398,7 @@ public class Util {
           builder.field("owner_address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", createTime);
+          builder.field("date_created", transactionTime);
           builder.field("first_token_id", exchangeCreateContract.getFirstTokenId().toStringUtf8());
           builder.field("first_token_balance", exchangeCreateContract.getFirstTokenBalance());
           builder.field("second_token_id", exchangeCreateContract.getSecondTokenId().toStringUtf8());
@@ -389,7 +418,7 @@ public class Util {
           builder.field("owner_address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", createTime);
+          builder.field("date_created", transactionTime);
           builder.field("exchange_id", exchangeTransactionContract.getExchangeId());
           builder.field("token_id", exchangeTransactionContract.getTokenId().toStringUtf8());
           builder.field("quant", exchangeTransactionContract.getQuant());
@@ -409,7 +438,7 @@ public class Util {
           builder.field("owner_address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", createTime);
+          builder.field("date_created", transactionTime);
           builder.field("smart_contract", JsonFormat.printToString(createSmartContract));
           builder.field("contract_address", contractAddress);
           builder.field("origin_address", WalletApi.encode58Check(
@@ -436,7 +465,7 @@ public class Util {
           builder.field("owner_address", owner);
           builder.field("block", block.getBlockHeader().getRawData().getNumber());
           builder.field("hash", getTxID(transaction));
-          builder.field("date_created", createTime);
+          builder.field("date_created", transactionTime);
           builder.field("contract_address", contractCallAddress);
           builder.field("call_value", triggerSmartContract.getCallValue());
           builder.field("data", ByteArray.toHexString(triggerSmartContract.getData().toByteArray()));

@@ -37,8 +37,11 @@ public class EsImporter {
       Transaction.Contract contract = transaction.getRawData().getContract(0);
       ContractType contractType = contract.getType();
       XContentBuilder builder = XContentFactory.jsonBuilder();
+      long createTime = transaction.getRawData().getTimestamp() == 0 ?
+          block.getBlockHeader().getRawData().getTimestamp() : transaction.getRawData().getTimestamp();
+      createTime = Util.getTimeInMillionSecond(createTime);
       builder.startObject();
-      builder.field("date_created", transaction.getRawData().getTimestamp());
+      builder.field("date_created", createTime);
       builder.field("block", block.getBlockHeader().getRawData().getNumber());
       builder.field("hash", Util.getTxID(transaction));
       builder.field("contract_data", Util.printTransactionToJSON(transaction));
@@ -275,6 +278,12 @@ public class EsImporter {
 
     deleteIndex(".security-6 ");
     deleteIndex(".security");
+    deleteIndex("abcd");
+    deleteIndex("player");
+    deleteIndex("qwe");
+    deleteIndex("smart_contract_triggers");
+    deleteIndex("smart_contracts");
+    deleteIndex("statistics");
   }
 
   public long getCurrentExchangeID() {
@@ -439,7 +448,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 8 * 60 * 60, 30, TimeUnit.SECONDS);
+      }, 5 * 60 * 60, 30, TimeUnit.SECONDS);
 
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
@@ -448,7 +457,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 8 * 60 * 60, 2, TimeUnit.SECONDS);
+      }, 5 * 60 * 60, 2, TimeUnit.SECONDS);
     } catch (Exception e) {
       e.printStackTrace();
     }
