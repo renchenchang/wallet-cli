@@ -105,7 +105,7 @@ public class EsImporter {
         .source(builder);
     connectionTool.blockBulk.add(indexRequest);
 
-    if (connectionTool.blockBulk.numberOfActions() >= 5000) {
+    if (connectionTool.blockBulk.numberOfActions() >= 10000) {
       connectionTool.bulkSave();
     }
   }
@@ -439,7 +439,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 0, 2, TimeUnit.SECONDS);
+      }, 0, 15, TimeUnit.SECONDS);
 
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
