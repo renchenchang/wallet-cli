@@ -98,6 +98,7 @@ public class WalletApi {
   private byte[] address;
   private static byte addressPreFixByte = CommonConstant.ADD_PRE_FIX_BYTE_TESTNET;
   private static int rpcVersion = 0;
+  public static int hours = 0;
 
   private static GrpcClient rpcCli = init();
 
@@ -131,6 +132,9 @@ public class WalletApi {
     }
     if (config.hasPath("RPC_version")) {
       rpcVersion = config.getInt("RPC_version");
+    }
+    if (config.hasPath("hours")) {
+      hours = config.getInt("hours");
     }
     return new GrpcClient(fullNode, solidityNode);
   }
