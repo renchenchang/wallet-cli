@@ -99,7 +99,7 @@ public class Statistic {
     try {
       Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
-          .executeQuery("select count(*) from transactions where date_created>="
+          .executeQuery("select sum(transactions) from blocks where date_created>="
               + startTime + " and date_created<" + endTime);
       if (results.next()) {
         count = results.getLong(1);

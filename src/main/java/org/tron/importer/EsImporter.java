@@ -105,7 +105,7 @@ public class EsImporter {
         .source(builder);
     connectionTool.blockBulk.add(indexRequest);
 
-    if (connectionTool.blockBulk.numberOfActions() >= 10000) {
+    if (connectionTool.blockBulk.numberOfActions() >= 5000) {
       connectionTool.bulkSave();
     }
   }
@@ -236,7 +236,7 @@ public class EsImporter {
     }
   }
 
-  private void deleteIndex(String index) throws IOException {
+  public void deleteIndex(String index) throws IOException {
     DeleteIndexRequest request = new DeleteIndexRequest(index);
     request.timeout("2m");
     request.indicesOptions(IndicesOptions.lenientExpandOpen());
@@ -282,6 +282,8 @@ public class EsImporter {
     deleteIndex("smart_contract_triggers");
     deleteIndex("smart_contracts");
     deleteIndex("statistics");
+    deleteIndex("exchange_transactions");
+    deleteIndex("exchanges");
   }
 
   public long getCurrentExchangeID() {
@@ -437,7 +439,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 0, 30, TimeUnit.SECONDS);
+      }, 0, 2, TimeUnit.SECONDS);
 
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {

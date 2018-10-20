@@ -47,6 +47,6 @@ public class ConnectionTool {
     System.out.println("before save,the number of actions is " + blockBulk.numberOfActions());
     client.bulk(blockBulk, RequestOptions.DEFAULT);
     blockBulk.requests().clear();
-    System.out.println("after save,the number of actions is " + blockBulk.numberOfActions());
+  //  System.out.println("after save,the number of actions is " + blockBulk.numberOfActions());
   }
 }

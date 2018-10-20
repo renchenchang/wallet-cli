@@ -8,8 +8,7 @@ public class Reset {
 
   public static void main(String[] args) throws IOException {
     EsImporter esImporter = new EsImporter();
-    //esImporter.resetDB();
-    esImporter.delteBlocksFrom(3240000);
+    esImporter.deleteIndex("statistics");
 
   }
 }

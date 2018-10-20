@@ -97,10 +97,11 @@ public class Util {
 
   public static void syncAddress() throws IOException {
     synchronized (address) {
+      System.out.println("syncing address");
       for (Entry<String, Long> stringLongEntry : address.entrySet()) {
         String address = stringLongEntry.getKey();
         long time = stringLongEntry.getValue();
-        System.out.println("sync address " + address);
+       // System.out.println("sync address " + address);
         XContentBuilder builder = XContentFactory.jsonBuilder();
         builder.startObject();
         builder.field("address", address);
@@ -120,8 +121,8 @@ public class Util {
       }
       if (connectionTool.blockBulk.numberOfActions() > 0) {
         connectionTool.bulkSave();
+        address.clear();
       }
-      address.clear();
     }
   }
 
