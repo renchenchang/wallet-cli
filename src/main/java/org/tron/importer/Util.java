@@ -126,6 +126,19 @@ public class Util {
     }
   }
 
+  public static void addAddress(String owner, ArrayList<String> to, long time) {
+    synchronized (address) {
+      if (!address.containsKey(owner)) {
+        address.put(owner, time);
+      }
+      for (String s : to) {
+        if (!address.containsKey(s)) {
+          address.put(s, time);
+        }
+      }
+    }
+  }
+
   public static List<UpdateRequest> getUpdateBuilder(Block block, Transaction transaction, boolean full)
       throws IOException {
     List<UpdateRequest> list = new ArrayList<>();
@@ -134,16 +147,7 @@ public class Util {
     ArrayList<String> to = getToAddress(contract);
     long time = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
-      synchronized (address) {
-        if (!address.containsKey(owner)) {
-          address.put(owner, time);
-        }
-        for (String s : to) {
-          if (!address.containsKey(owner)) {
-            address.put(s, time);
-          }
-        }
-      }
+      addAddress(owner, to, time);
     }
 
     XContentBuilder builder = XContentFactory.jsonBuilder();
@@ -284,16 +288,7 @@ public class Util {
     ArrayList<String> to = getToAddress(contract);
     long transactionTime = block.getBlockHeader().getRawData().getTimestamp();
     if (!full) {
-      synchronized (address) {
-        if (!address.containsKey(owner)) {
-          address.put(owner, transactionTime);
-        }
-        for (String s : to) {
-          if (!address.containsKey(owner)) {
-            address.put(s, transactionTime);
-          }
-        }
-      }
+      addAddress(owner, to, transactionTime);
     }
     try {
       switch (contract.getType()) {

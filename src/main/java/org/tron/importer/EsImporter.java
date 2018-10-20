@@ -77,7 +77,7 @@ public class EsImporter {
     }
   }
 
-  private void parseBlock(Block block, boolean full) throws IOException {
+  public void parseBlock(Block block, boolean full) throws IOException {
     System.out.println("parsing block " + block.getBlockHeader().getRawData().getNumber()
         + ", confirmed: " + !full);
 
