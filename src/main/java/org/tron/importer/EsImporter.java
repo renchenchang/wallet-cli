@@ -448,7 +448,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 5 * 60 * 60, 30, TimeUnit.SECONDS);
+      }, 2 * 60 * 60, 30, TimeUnit.SECONDS);
 
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
@@ -457,7 +457,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 5 * 60 * 60, 2, TimeUnit.SECONDS);
+      }, 2 * 60 * 60, 2, TimeUnit.SECONDS);
     } catch (Exception e) {
       e.printStackTrace();
     }
