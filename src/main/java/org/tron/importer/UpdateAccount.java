@@ -25,7 +25,13 @@ public class UpdateAccount {
         JSONObject jsonObject = JSONObject.parseObject(JsonFormat.printToString(account));
         jsonObject.put("need_update", 0);
         updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
-        connectionTool.client.update(updateRequest, RequestOptions.DEFAULT);
+        connectionTool.blockBulk.add(updateRequest);
+        if (connectionTool.blockBulk.numberOfActions() >= 5000) {
+          connectionTool.bulkSave();
+        }
+      }
+      if (connectionTool.blockBulk.numberOfActions() > 0) {
+        connectionTool.bulkSave();
       }
     } catch (Exception e) {
       e.printStackTrace();

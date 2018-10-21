@@ -467,7 +467,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, WalletApi.hours * 60 * 60, 2, TimeUnit.SECONDS);
+      }, WalletApi.hours * 60 * 60, 5, TimeUnit.SECONDS);
     } catch (Exception e) {
       e.printStackTrace();
     }
