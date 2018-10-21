@@ -347,6 +347,7 @@ public class Util {
           builder.field("date_created", transactionTime);
           builder.field("frozen", "");
           builder.field("abbr", assetIssueContract.getAbbr().toStringUtf8());
+          builder.field("confirmed", !full);
           builder.endObject();
           indexRequest = new IndexRequest("asset_issue_contract", "asset_issue_contract",
               owner)
@@ -364,6 +365,7 @@ public class Util {
           builder.field("to_address", to.get(0));
           builder.field("token_name", participateAssetIssueContract.getAssetName().toStringUtf8());
           builder.field("amount", participateAssetIssueContract.getAmount());
+          builder.field("confirmed", !full);
           builder.endObject();
           indexRequest = new IndexRequest("participate_asset_issue", "participate_asset_issue",
               Util.getTxID(transaction))
@@ -379,6 +381,7 @@ public class Util {
           builder.field("hash", getTxID(transaction));
           builder.field("date_created", transactionTime);
           builder.field("url", witnessCreateContract.getUrl().toStringUtf8());
+          builder.field("confirmed", !full);
           builder.endObject();
           indexRequest = new IndexRequest("witness_create_contract", "witness_create_contract", owner)
               .source(builder);
@@ -396,7 +399,7 @@ public class Util {
             builder.field("owner_address", owner);
             builder.field("candidate_address", toAddress);
             builder.field("vote_count", vote.getVoteCount());
-
+            builder.field("confirmed", !full);
             builder.endObject();
             indexRequest = new IndexRequest("vote_witness_contract", "vote_witness_contract",
                 Util.getTxID(transaction))

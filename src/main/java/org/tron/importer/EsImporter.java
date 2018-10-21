@@ -422,6 +422,7 @@ public class EsImporter {
       EsImporter importer = new EsImporter();
       Statistic statistic = new Statistic();
       UpdateAccount updateAccount = new UpdateAccount();
+      TotalStatistics totalStatistics = new TotalStatistics();
       ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
@@ -454,6 +455,15 @@ public class EsImporter {
         try {
           System.out.println("update accounts at:" + new Date());
           updateAccount.UpdateAccouts();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, WalletApi.hours * 60 * 60, 2, TimeUnit.SECONDS);
+
+      scheduledExecutorService.scheduleAtFixedRate(() -> {
+        try {
+          System.out.println("totalStatistics at:" + new Date());
+          totalStatistics.statistics();
         } catch (Exception e) {
           e.printStackTrace();
         }
