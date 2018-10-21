@@ -13,7 +13,7 @@ public class UpdateAccount {
 
   private ConnectionTool connectionTool = new ConnectionTool();
 
-  public void UpdateAccouts() {
+  public void UpdateAccounts() {
     try {
       Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement

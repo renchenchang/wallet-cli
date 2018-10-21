@@ -454,7 +454,7 @@ public class EsImporter {
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
           System.out.println("update accounts at:" + new Date());
-          updateAccount.UpdateAccouts();
+          updateAccount.UpdateAccounts();
         } catch (Exception e) {
           e.printStackTrace();
         }
