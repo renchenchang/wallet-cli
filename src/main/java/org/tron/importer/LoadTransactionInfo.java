@@ -64,7 +64,7 @@ public class LoadTransactionInfo {
 //        for (Log log : info.getLogList()) {
 //
 //        }
-          if (connectionTool.blockBulk.numberOfActions() >= 1000) {
+          if (connectionTool.blockBulk.numberOfActions() >= 10000) {
             connectionTool.bulkSave();
           }
         }
