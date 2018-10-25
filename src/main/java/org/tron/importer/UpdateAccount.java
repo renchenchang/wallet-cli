@@ -20,13 +20,14 @@ public class UpdateAccount {
           .executeQuery("select address from accounts where need_update=1");
       while (results.next()) {
         String address = results.getString(1);
+        System.out.println("syncing address: " + address);
         Account account = WalletApi.queryAccount(WalletApi.decodeFromBase58Check(address));
         UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts", address);
         JSONObject jsonObject = JSONObject.parseObject(JsonFormat.printToString(account));
         jsonObject.put("need_update", 0);
         updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
         connectionTool.blockBulk.add(updateRequest);
-        if (connectionTool.blockBulk.numberOfActions() >= 5000) {
+        if (connectionTool.blockBulk.numberOfActions() >= 500) {
           connectionTool.bulkSave();
         }
       }
@@ -36,6 +37,11 @@ public class UpdateAccount {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  public static void main(String[] args) {
+    UpdateAccount updateAccount = new UpdateAccount();
+    updateAccount.UpdateAccounts();
   }
 }
 

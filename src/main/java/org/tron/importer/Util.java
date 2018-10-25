@@ -57,6 +57,8 @@ import org.tron.protos.Protocol.Exchange;
 import org.tron.protos.Protocol.Key;
 import org.tron.protos.Protocol.Permission;
 import org.tron.protos.Protocol.Transaction;
+import org.tron.protos.Protocol.TransactionInfo;
+import org.tron.protos.Protocol.TransactionInfo.Log;
 import org.tron.walletserver.WalletApi;
 
 public class Util {
@@ -492,6 +494,7 @@ public class Util {
           break;
 
         case TriggerSmartContract:
+          String txid = getTxID(transaction);
           TriggerSmartContract triggerSmartContract =
               contract.getParameter().unpack(TriggerSmartContract.class);
           String contractCallAddress = WalletApi.encode58Check(
@@ -509,6 +512,44 @@ public class Util {
               Util.getTxID(transaction))
               .source(builder);
           list.add(indexRequest);
+
+
+          Optional<TransactionInfo> transactionInfo = WalletApi.getTransactionInfoById(txid);
+          if (transactionInfo.isPresent()) {
+            TransactionInfo info = transactionInfo.get();
+            String triggerContractAddress = WalletApi.encode58Check(info.getContractAddress().toByteArray());
+            long blockNum = info.getBlockNumber();
+            long time = info.getBlockTimeStamp();
+            long energyFee =  info.getReceipt().getEnergyFee();
+            long netFee =  info.getReceipt().getNetFee();
+            long energyUsage = info.getReceipt().getEnergyUsage();
+            long netUsage = info.getReceipt().getNetUsage();
+            long originEnergyUsage = info.getReceipt().getOriginEnergyUsage();
+            long energyUsageTotal = info.getReceipt().getEnergyUsageTotal();
+            String exeResult = info.getReceipt().getResult().getDescriptorForType().getName();
+
+            builder.field("block", blockNum);
+            builder.field("hash", txid);
+            builder.field("date_created", time);
+            builder.field("contract_address", triggerContractAddress);
+            builder.field("energy_fee", energyFee);
+            builder.field("net_fee", netFee);
+            builder.field("energy_usage", energyUsage);
+            builder.field("net_usage", netUsage);
+            builder.field("origin_energy_usage", originEnergyUsage);
+            builder.field("energy_usage_total", energyUsageTotal);
+            builder.field("exe_result", exeResult);
+            builder.field("confirmed", !full);
+            builder.endObject();
+            indexRequest = new IndexRequest("transaction_info", "transaction_info",txid)
+                .source(builder);
+            list.add(indexRequest);
+
+            for (Log log : info.getLogList()) {
+
+            }
+          }
+
           break;
 
 //        case FreezeBalanceContract:

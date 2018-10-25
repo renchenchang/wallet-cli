@@ -101,6 +101,10 @@ public class TotalStatistics {
     }
   }
 
+  public void smartContractStatistic() {
+
+  }
+
 
   public void statistics() throws IOException {
     tokenIssued();
