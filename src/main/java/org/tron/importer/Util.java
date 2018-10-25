@@ -507,50 +507,12 @@ public class Util {
           builder.field("call_value", triggerSmartContract.getCallValue());
           builder.field("data", ByteArray.toHexString(triggerSmartContract.getData().toByteArray()));
           builder.field("confirmed", !full);
+          builder.field("need_result", 1);
           builder.endObject();
           indexRequest = new IndexRequest("smart_contract_triggers", "smart_contract_triggers",
               Util.getTxID(transaction))
               .source(builder);
           list.add(indexRequest);
-
-
-          Optional<TransactionInfo> transactionInfo = WalletApi.getTransactionInfoById(txid);
-          if (transactionInfo.isPresent()) {
-            TransactionInfo info = transactionInfo.get();
-            String triggerContractAddress = WalletApi.encode58Check(info.getContractAddress().toByteArray());
-            long blockNum = info.getBlockNumber();
-            long time = info.getBlockTimeStamp();
-            long energyFee =  info.getReceipt().getEnergyFee();
-            long netFee =  info.getReceipt().getNetFee();
-            long energyUsage = info.getReceipt().getEnergyUsage();
-            long netUsage = info.getReceipt().getNetUsage();
-            long originEnergyUsage = info.getReceipt().getOriginEnergyUsage();
-            long energyUsageTotal = info.getReceipt().getEnergyUsageTotal();
-            String exeResult = info.getReceipt().getResult().getValueDescriptor().getName();
-            XContentBuilder transactionInfoBuilder = XContentFactory.jsonBuilder();
-            transactionInfoBuilder.startObject();
-            transactionInfoBuilder.field("hash", txid);
-            transactionInfoBuilder.field("block", blockNum);
-            transactionInfoBuilder.field("date_created", time);
-            transactionInfoBuilder.field("contract_address", triggerContractAddress);
-            transactionInfoBuilder.field("energy_fee", energyFee);
-            transactionInfoBuilder.field("net_fee", netFee);
-            transactionInfoBuilder.field("energy_usage", energyUsage);
-            transactionInfoBuilder.field("net_usage", netUsage);
-            transactionInfoBuilder.field("origin_energy_usage", originEnergyUsage);
-            transactionInfoBuilder.field("energy_usage_total", energyUsageTotal);
-            transactionInfoBuilder.field("exe_result", exeResult);
-            transactionInfoBuilder.field("confirmed", !full);
-            transactionInfoBuilder.endObject();
-            indexRequest = new IndexRequest("transaction_info", "transaction_info", txid)
-                .source(transactionInfoBuilder);
-            list.add(indexRequest);
-
-//            for (Log log : info.getLogList()) {
-//
-//            }
-          }
-
           break;
 
 //        case FreezeBalanceContract:

@@ -7,8 +7,8 @@ public class Reset {
 
   public static void main(String[] args) throws IOException {
     EsImporter esImporter = new EsImporter();
-   // esImporter.deleteIndex("statistics");
+    esImporter.deleteIndex("statistics");
    // esImporter.deleteBlocksFrom(3112940);
-    esImporter.parseBlock(WalletApi.getBlock4Loader(3112940, false), false);
+  //  esImporter.parseBlock(WalletApi.getBlock4Loader(3112940, false), false);
   }
 }

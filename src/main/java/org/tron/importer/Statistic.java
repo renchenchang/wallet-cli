@@ -19,7 +19,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 
 public class Statistic {
 
-  private long startTime = 1529884800000L;
+  private long startTime = 1529884800000L; //2018-06-25 08:00:00
   private ConnectionTool connectionTool = new ConnectionTool();
   private long period = 24 * 60 * 60 * 1000;
 
