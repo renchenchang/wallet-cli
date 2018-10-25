@@ -389,7 +389,7 @@ public class EsImporter {
     return hash;
   }
 
-  public void delteBlocksFrom(long from) {
+  public void deleteBlocksFrom(long from) {
     try {
       String hash = "";
       Statement statement = connectionTool.getConn().createStatement();
@@ -400,6 +400,9 @@ public class EsImporter {
         System.out.println(number);
         DeleteRequest request = new DeleteRequest("blocks", "blocks", hash);
         connectionTool.blockBulk.add(request);
+        if(connectionTool.blockBulk.numberOfActions() >= 10000) {
+          connectionTool.bulkSave();
+        }
       }
       connectionTool.bulkSave();
     } catch (Exception e) {

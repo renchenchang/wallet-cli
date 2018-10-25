@@ -526,28 +526,29 @@ public class Util {
             long netUsage = info.getReceipt().getNetUsage();
             long originEnergyUsage = info.getReceipt().getOriginEnergyUsage();
             long energyUsageTotal = info.getReceipt().getEnergyUsageTotal();
-            String exeResult = info.getReceipt().getResult().getDescriptorForType().getName();
-
-            builder.field("block", blockNum);
-            builder.field("hash", txid);
-            builder.field("date_created", time);
-            builder.field("contract_address", triggerContractAddress);
-            builder.field("energy_fee", energyFee);
-            builder.field("net_fee", netFee);
-            builder.field("energy_usage", energyUsage);
-            builder.field("net_usage", netUsage);
-            builder.field("origin_energy_usage", originEnergyUsage);
-            builder.field("energy_usage_total", energyUsageTotal);
-            builder.field("exe_result", exeResult);
-            builder.field("confirmed", !full);
-            builder.endObject();
-            indexRequest = new IndexRequest("transaction_info", "transaction_info",txid)
-                .source(builder);
+            String exeResult = info.getReceipt().getResult().getValueDescriptor().getName();
+            XContentBuilder transactionInfoBuilder = XContentFactory.jsonBuilder();
+            transactionInfoBuilder.startObject();
+            transactionInfoBuilder.field("hash", txid);
+            transactionInfoBuilder.field("block", blockNum);
+            transactionInfoBuilder.field("date_created", time);
+            transactionInfoBuilder.field("contract_address", triggerContractAddress);
+            transactionInfoBuilder.field("energy_fee", energyFee);
+            transactionInfoBuilder.field("net_fee", netFee);
+            transactionInfoBuilder.field("energy_usage", energyUsage);
+            transactionInfoBuilder.field("net_usage", netUsage);
+            transactionInfoBuilder.field("origin_energy_usage", originEnergyUsage);
+            transactionInfoBuilder.field("energy_usage_total", energyUsageTotal);
+            transactionInfoBuilder.field("exe_result", exeResult);
+            transactionInfoBuilder.field("confirmed", !full);
+            transactionInfoBuilder.endObject();
+            indexRequest = new IndexRequest("transaction_info", "transaction_info", txid)
+                .source(transactionInfoBuilder);
             list.add(indexRequest);
 
-            for (Log log : info.getLogList()) {
-
-            }
+//            for (Log log : info.getLogList()) {
+//
+//            }
           }
 
           break;
