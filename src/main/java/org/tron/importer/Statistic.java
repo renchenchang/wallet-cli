@@ -176,6 +176,8 @@ public class Statistic {
       updateStatistic.put("accounts", accountNum);
       updateStatistic.put("transactions", transactionNum);
       updateStatistic.put("block_size", blockSize);
+      updateStatistic.put("contracts", contractNum);
+      updateStatistic.put("triggers", triggerNum);
       updateStatistic.put("end", end);
       updateRequest.doc(updateStatistic.toJSONString(), XContentType.JSON);
       updateRequest.upsert(indexRequest);
