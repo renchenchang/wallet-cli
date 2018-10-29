@@ -11,24 +11,21 @@ public class DebugTool {
 
   public void LoadData() {
     try {
+      long max = 0;
+      String user = "";
+      String contract = "";
       Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
-          .executeQuery("select hash from smart_contract_triggers ");
+          .executeQuery("select  owner_address from smart_contract_triggers group by owner_address");
       while (results.next()) {
-        String txid = results.getString(1);
-        UpdateRequest updateRequest = new UpdateRequest("smart_contract_triggers",
-            "smart_contract_triggers", txid);
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("need_result", 1);
-        updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
-        connectionTool.blockBulk.add(updateRequest);
-        if (connectionTool.blockBulk.numberOfActions() >= 10000) {
-          connectionTool.bulkSave();
-        }
+        String owner_address = results.getString(1);
+//        String contract_address = results.getString(2);
+//        long count = results.getLong(3);
+        max++;
       }
-      if (connectionTool.blockBulk.numberOfActions() > 0) {
-        connectionTool.bulkSave();
-      }
+
+      System.out.println(user + "\t" + contract + "\t" + max);
+
     } catch (Exception e) {
       e.printStackTrace();
     }

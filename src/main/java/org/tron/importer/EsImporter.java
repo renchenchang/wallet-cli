@@ -284,6 +284,7 @@ public class EsImporter {
     deleteIndex("statistics");
     deleteIndex("exchange_transactions");
     deleteIndex("exchanges");
+    deleteIndex("transaction_info");
   }
 
   public long getCurrentExchangeID() {
@@ -481,7 +482,7 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 0, 5, TimeUnit.SECONDS);
+      }, 60, 5, TimeUnit.SECONDS);
     } catch (Exception e) {
       e.printStackTrace();
     }
