@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -18,6 +20,8 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.tron.api.GrpcAPI.BlockList;
@@ -30,7 +34,117 @@ import org.tron.walletserver.WalletApi;
 
 public class EsImporter {
 
- private ConnectionTool connectionTool = new ConnectionTool();
+  private ConnectionTool connectionTool = new ConnectionTool();
+
+  public void init() throws IOException {
+    CreateIndexRequest createBlockRequest = new CreateIndexRequest("blocks");
+    Builder blockSettings = Settings.builder();
+    blockSettings.put("index.number_of_shards", 5);
+    blockSettings.put("index.max_result_window", 1000000000);
+    createBlockRequest.settings(blockSettings);
+    GetIndexRequest getIndexRequest = new GetIndexRequest();
+    getIndexRequest.indices("blocks");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createBlockRequest, RequestOptions.DEFAULT);
+    }
+
+
+    CreateIndexRequest createTransactionRequest = new CreateIndexRequest("transactions");
+    Builder transactionsSettings = Settings.builder();
+    transactionsSettings.put("index.number_of_shards", 5);
+    transactionsSettings.put("index.max_result_window", 1000000000);
+    createTransactionRequest.settings(transactionsSettings);
+    getIndexRequest = new GetIndexRequest();
+    getIndexRequest.indices("transactions");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createTransactionRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest createTransferRequest = new CreateIndexRequest("transfers");
+    Builder transferSettings = Settings.builder();
+    transferSettings.put("index.number_of_shards", 5);
+    transferSettings.put("index.max_result_window", 1000000000);
+    createTransferRequest.settings(transferSettings);
+    getIndexRequest = new GetIndexRequest();
+    getIndexRequest.indices("transfers");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createTransferRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest createExchangeTransactionRequest = new CreateIndexRequest("exchange_transactions");
+    Builder exchangeTransactionSettings = Settings.builder();
+    exchangeTransactionSettings.put("index.number_of_shards", 5);
+    exchangeTransactionSettings.put("index.max_result_window", 1000000000);
+    createExchangeTransactionRequest.settings(exchangeTransactionSettings);
+    getIndexRequest = new GetIndexRequest();
+    getIndexRequest.indices("exchange_transactions");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices()
+          .create(createExchangeTransactionRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest createTriggerRequest = new CreateIndexRequest("smart_contract_triggers");
+    Builder triggerSettings = Settings.builder();
+    triggerSettings.put("index.number_of_shards", 5);
+    triggerSettings.put("index.max_result_window", 1000000000);
+    createTriggerRequest.settings(triggerSettings);
+    getIndexRequest = new GetIndexRequest();
+    getIndexRequest.indices("smart_contract_triggers");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createTriggerRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest createAccountRequest = new CreateIndexRequest("accounts");
+    Builder accountSettings = Settings.builder();
+    accountSettings.put("index.number_of_shards", 5);
+    accountSettings.put("index.max_result_window", 1000000000);
+    createAccountRequest.settings(accountSettings);
+    getIndexRequest.indices("accounts");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createAccountRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest createInfoRequest = new CreateIndexRequest("transaction_info");
+    Builder infoSettings = Settings.builder();
+    infoSettings.put("index.number_of_shards", 5);
+    infoSettings.put("index.max_result_window", 1000000000);
+    createInfoRequest.settings(infoSettings);
+    getIndexRequest.indices("transaction_info");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createInfoRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest createParticipateRequest = new CreateIndexRequest("participate_asset_issue");
+    Builder participateSettings = Settings.builder();
+    participateSettings.put("index.number_of_shards", 5);
+    participateSettings.put("index.max_result_window", 1000000000);
+    createParticipateRequest.settings(participateSettings);
+    getIndexRequest.indices("participate_asset_issue");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createParticipateRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest createVoteRequest = new CreateIndexRequest("vote_witness_contract");
+    Builder voteSettings = Settings.builder();
+    voteSettings.put("index.number_of_shards", 5);
+    voteSettings.put("index.max_result_window", 1000000000);
+    createVoteRequest.settings(voteSettings);
+    getIndexRequest.indices("vote_witness_contract");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(createVoteRequest, RequestOptions.DEFAULT);
+    }
+
+    CreateIndexRequest contractsRequest = new CreateIndexRequest("smart_contracts");
+    Builder contractsSettings = Settings.builder();
+    contractsSettings.put("index.number_of_shards", 5);
+    contractsSettings.put("index.max_result_window", 1000000000);
+    contractsRequest.settings(contractsSettings);
+    getIndexRequest.indices("smart_contracts");
+    if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
+      connectionTool.client.indices().create(contractsRequest, RequestOptions.DEFAULT);
+    }
+
+  }
 
   private void parseTransactions(Block block, boolean full) throws IOException {
     for (Transaction transaction : block.getTransactionsList()) {
@@ -424,6 +538,8 @@ public class EsImporter {
   public static void main(String[] args) {
     try {
       EsImporter importer = new EsImporter();
+      importer.init();
+
       Statistic statistic = new Statistic();
       UpdateAccount updateAccount = new UpdateAccount();
       TotalStatistics totalStatistics = new TotalStatistics();
@@ -482,7 +598,8 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, 60, 5, TimeUnit.SECONDS);
+      }, WalletApi.hours * 60 * 60, 5, TimeUnit.SECONDS);
+
     } catch (Exception e) {
       e.printStackTrace();
     }
