@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Optional;
+import java.util.UUID;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -128,7 +129,7 @@ public class TotalStatistics {
         builder.field("second_token_balance", secondBalance);
         builder.field("date_created", System.currentTimeMillis());
         builder.endObject();
-        IndexRequest indexRequest = new IndexRequest("exchange_prices", "exchange_prices", id)
+        IndexRequest indexRequest = new IndexRequest("exchange_prices", "exchange_prices", UUID.randomUUID().toString())
             .source(builder);
         connectionTool.blockBulk.add(indexRequest);
       }
