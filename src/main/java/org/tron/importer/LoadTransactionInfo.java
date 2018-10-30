@@ -20,7 +20,7 @@ public class LoadTransactionInfo {
     try {
       Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
-          .executeQuery("select hash from smart_contract_triggers where (need_result is null) or need_result=1");
+          .executeQuery("select hash from smart_contract_triggers where ((need_result is null) or need_result=1) and confirmed=true");
       while (results.next()) {
         String txid = results.getString(1);
         Optional<TransactionInfo> transactionInfo = WalletApi.getTransactionInfoById(txid);
