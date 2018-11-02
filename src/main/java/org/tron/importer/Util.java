@@ -7,11 +7,14 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.TimeZone;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -508,6 +511,7 @@ public class Util {
           builder.field("data", ByteArray.toHexString(triggerSmartContract.getData().toByteArray()));
           builder.field("confirmed", !full);
           builder.field("need_result", 1);
+          builder.field("day", Util.getCurrentEpochTimeStamp(transactionTime));
           builder.endObject();
           indexRequest = new IndexRequest("smart_contract_triggers", "smart_contract_triggers",
               Util.getTxID(transaction))
@@ -666,6 +670,13 @@ public class Util {
       return null;
     }
   }
+
+  public static String getCurrentEpochTimeStamp(long timeStamp) throws Exception {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    return sdf.format(new Date(timeStamp));
+  }
+
 
   public static byte[] getOwner(Transaction.Contract contract) {
     ByteString owner;
