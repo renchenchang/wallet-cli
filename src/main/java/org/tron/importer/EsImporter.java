@@ -545,7 +545,7 @@ public class EsImporter {
       TotalStatistics totalStatistics = new TotalStatistics();
       LoadTransactionInfo loadTransactionInfo = new LoadTransactionInfo();
 
-      ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
+      ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(20);
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
           System.out.println("sync data from block chain at:" + new Date());

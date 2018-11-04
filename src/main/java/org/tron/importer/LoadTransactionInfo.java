@@ -81,4 +81,9 @@ public class LoadTransactionInfo {
       e.printStackTrace();
     }
   }
+
+  public static void main(String[] args) {
+    LoadTransactionInfo load = new LoadTransactionInfo();
+    load.LoadData();
+  }
 }
