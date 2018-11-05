@@ -21,7 +21,7 @@ public class DebugTool {
         jsonObject.put("need_result", 1);
         updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
         connectionTool.blockBulk.add(updateRequest);
-        if (connectionTool.blockBulk.numberOfActions() >= 5000) {
+        if (connectionTool.blockBulk.numberOfActions() >= 10000) {
           connectionTool.bulkSave();
         }
       }

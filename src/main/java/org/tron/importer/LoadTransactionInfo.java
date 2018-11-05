@@ -21,15 +21,16 @@ public class LoadTransactionInfo {
     try {
       Statement statement = connectionTool.getConn().createStatement();
       ResultSet results = statement
-          .executeQuery("select hash from smart_contract_triggers where ((need_result is null) or need_result=1) and confirmed=true");
+          .executeQuery("select hash, owner_address from smart_contract_triggers where ((need_result is null) or need_result=1) and confirmed=true");
       while (results.next()) {
         String txid = results.getString(1);
+        String owner = results.getString(2);
         Optional<TransactionInfo> transactionInfo = WalletApi.getTransactionInfoById(txid);
-        Optional<Transaction> transaction = WalletApi.getTransactionById(txid);
+      //  Optional<Transaction> transaction = WalletApi.getTransactionById(txid);
         if (transactionInfo.isPresent()) {
           TransactionInfo info = transactionInfo.get();
           String triggerContractAddress = WalletApi.encode58Check(info.getContractAddress().toByteArray());
-          String ownerAddress = WalletApi.encode58Check(Util.getOwner(transaction.get().getRawData().getContract(0)));
+         // String ownerAddress = WalletApi.encode58Check(Util.getOwner(transaction.get().getRawData().getContract(0)));
           long blockNum = info.getBlockNumber();
           long time = info.getBlockTimeStamp();
           long energyFee =  info.getReceipt().getEnergyFee();
@@ -42,7 +43,7 @@ public class LoadTransactionInfo {
           XContentBuilder transactionInfoBuilder = XContentFactory.jsonBuilder();
           transactionInfoBuilder.startObject();
           transactionInfoBuilder.field("hash", txid);
-          transactionInfoBuilder.field("owner_address", ownerAddress);
+          transactionInfoBuilder.field("owner_address", owner);
           transactionInfoBuilder.field("block", blockNum);
           transactionInfoBuilder.field("date_created", time);
           transactionInfoBuilder.field("contract_address", triggerContractAddress);
