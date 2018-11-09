@@ -422,7 +422,7 @@ public class Util {
           builder.field("date_created", transactionTime);
           builder.field("parameters", JsonFormat.printToString(proposalCreateContract));
           builder.field("approved", "");
-          builder.field("id", (importer.getCurrentProposalID() + 1) + "");
+          builder.field("id", (importer.getCurrentProposalID() + 1));
           builder.field("confirmed", !full);
           builder.endObject();
           indexRequest = new IndexRequest("proposals", "proposals",
@@ -442,7 +442,7 @@ public class Util {
           builder.field("first_token_balance", exchangeCreateContract.getFirstTokenBalance());
           builder.field("second_token_id", exchangeCreateContract.getSecondTokenId().toStringUtf8());
           builder.field("second_token_balance", exchangeCreateContract.getSecondTokenBalance());
-          builder.field("id", (importer.getCurrentExchangeID() + 1) + "");
+          builder.field("id", (importer.getCurrentExchangeID() + 1));
           builder.field("confirmed", !full);
           builder.endObject();
           indexRequest = new IndexRequest("exchanges", "exchanges",
