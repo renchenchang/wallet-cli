@@ -433,42 +433,47 @@ public class Util {
           break;
 
         case ExchangeCreateContract:
-          long id = importer.getCurrentExchangeID() + 1;
-          ExchangeCreateContract exchangeCreateContract =
-              contract.getParameter().unpack(ExchangeCreateContract.class);
-          builder.field("owner_address", owner);
-          builder.field("block", block.getBlockHeader().getRawData().getNumber());
-          builder.field("hash", getTxID(transaction));
-          builder.field("date_created", transactionTime);
-          builder.field("first_token_id", exchangeCreateContract.getFirstTokenId().toStringUtf8());
-          builder.field("first_token_balance", exchangeCreateContract.getFirstTokenBalance());
-          builder.field("second_token_id", exchangeCreateContract.getSecondTokenId().toStringUtf8());
-          builder.field("second_token_balance", exchangeCreateContract.getSecondTokenBalance());
-          builder.field("id", id);
-          builder.field("confirmed", !full);
-          builder.endObject();
-          indexRequest = new IndexRequest("exchanges", "exchanges", id + "")
-              .source(builder);
-          list.add(indexRequest);
-
-          if (!importer.existExchangeStartPrice(id)) {
-            XContentBuilder newExchangeBuilder = XContentFactory.jsonBuilder();
-            newExchangeBuilder.startObject();
-            newExchangeBuilder.field("id", id);
-            newExchangeBuilder
+          if(!full) {
+            long id = importer.getCurrentExchangeID() + 1;
+            ExchangeCreateContract exchangeCreateContract =
+                contract.getParameter().unpack(ExchangeCreateContract.class);
+            builder.field("owner_address", owner);
+            builder.field("block", block.getBlockHeader().getRawData().getNumber());
+            builder.field("hash", getTxID(transaction));
+            builder.field("date_created", transactionTime);
+            builder
                 .field("first_token_id", exchangeCreateContract.getFirstTokenId().toStringUtf8());
-            newExchangeBuilder
-                .field("first_token_balance", exchangeCreateContract.getFirstTokenBalance());
-            newExchangeBuilder
+            builder.field("first_token_balance", exchangeCreateContract.getFirstTokenBalance());
+            builder
                 .field("second_token_id", exchangeCreateContract.getSecondTokenId().toStringUtf8());
-            newExchangeBuilder
-                .field("second_token_balance", exchangeCreateContract.getSecondTokenBalance());
-            newExchangeBuilder.field("date_created", transactionTime);
-            newExchangeBuilder.endObject();
-            IndexRequest newExchangeIndexRequest = new IndexRequest("exchange_start_price",
-                "exchange_start_price", id + "")
-                .source(newExchangeBuilder);
-            list.add(newExchangeIndexRequest);
+            builder.field("second_token_balance", exchangeCreateContract.getSecondTokenBalance());
+            builder.field("id", id);
+            builder.field("confirmed", !full);
+            builder.endObject();
+            indexRequest = new IndexRequest("exchanges", "exchanges", id + "")
+                .source(builder);
+            list.add(indexRequest);
+
+            if (!importer.existExchangeStartPrice(id)) {
+              XContentBuilder newExchangeBuilder = XContentFactory.jsonBuilder();
+              newExchangeBuilder.startObject();
+              newExchangeBuilder.field("id", id);
+              newExchangeBuilder
+                  .field("first_token_id", exchangeCreateContract.getFirstTokenId().toStringUtf8());
+              newExchangeBuilder
+                  .field("first_token_balance", exchangeCreateContract.getFirstTokenBalance());
+              newExchangeBuilder
+                  .field("second_token_id",
+                      exchangeCreateContract.getSecondTokenId().toStringUtf8());
+              newExchangeBuilder
+                  .field("second_token_balance", exchangeCreateContract.getSecondTokenBalance());
+              newExchangeBuilder.field("date_created", transactionTime);
+              newExchangeBuilder.endObject();
+              IndexRequest newExchangeIndexRequest = new IndexRequest("exchange_start_price",
+                  "exchange_start_price", id + "")
+                  .source(newExchangeBuilder);
+              list.add(newExchangeIndexRequest);
+            }
           }
           break;
 

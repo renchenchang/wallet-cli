@@ -541,6 +541,25 @@ public class EsImporter {
     }
   }
 
+  public void deleteExchangesFrom(long from) {
+    try {
+      Statement statement = connectionTool.getConn().createStatement();
+      ResultSet results = statement.executeQuery("select id from exchanges where id>=" + from);
+      while (results.next()) {
+        long id = results.getLong(1);
+
+        DeleteRequest request = new DeleteRequest("exchanges", "exchanges", id+ "");
+        connectionTool.blockBulk.add(request);
+        if(connectionTool.blockBulk.numberOfActions() >= 10000) {
+          connectionTool.bulkSave();
+        }
+      }
+      connectionTool.bulkSave();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private Block getCurrentBlockInSolidity() {
     Block block = WalletApi.getBlock4Loader(-1, false);
     return block;

@@ -7,7 +7,10 @@ public class Reset {
 
   public static void main(String[] args) throws IOException {
     EsImporter esImporter = new EsImporter();
-    esImporter.deleteBlocksFrom(3908763);
+    esImporter.deleteBlocksFrom(3949923);
+    esImporter.deleteExchangesFrom(10);
+    esImporter.deleteIndex("exchange_start_price");
+    esImporter.deleteIndex("exchange_prices");
  //   esImporter.resetDB();
 //    esImporter.deleteIndex("exchanges");
 //    esImporter.deleteIndex("exchange_prices");

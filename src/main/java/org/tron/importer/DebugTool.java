@@ -35,10 +35,11 @@ public class DebugTool {
 
   public void updateExchange(long[] ids) {
     try {
-      for (long id : ids) {
+      for (int i=0; i<ids.length; i++) {
+        long id = ids[i];
         UpdateRequest updateRequest = new UpdateRequest("exchanges", "exchanges", id + "");
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("checked", 1);
+        jsonObject.put("checked", i+1);
         updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
         connectionTool.blockBulk.add(updateRequest);
       }
@@ -52,6 +53,6 @@ public class DebugTool {
 
   public static void main(String[] args) {
     DebugTool debugTool = new DebugTool();
-    debugTool.updateExchange(new long[]{2, 7, 9});
+    debugTool.updateExchange(new long[]{11, 2, 7, 9, 5, 6, 10});
   }
 }
