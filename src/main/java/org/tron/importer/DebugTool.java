@@ -33,8 +33,25 @@ public class DebugTool {
     }
   }
 
+  public void updateExchange(long[] ids) {
+    try {
+      for (long id : ids) {
+        UpdateRequest updateRequest = new UpdateRequest("exchanges", "exchanges", id + "");
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("checked", 1);
+        updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
+        connectionTool.blockBulk.add(updateRequest);
+      }
+      if (connectionTool.blockBulk.numberOfActions() > 0) {
+        connectionTool.bulkSave();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   public static void main(String[] args) {
     DebugTool debugTool = new DebugTool();
-    debugTool.LoadData();
+    debugTool.updateExchange(new long[]{2, 7, 9});
   }
 }
