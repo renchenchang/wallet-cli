@@ -115,7 +115,7 @@ public class TotalStatistics {
       ResultSet results = statement
           .executeQuery("select id, first_token_id, first_token_balance, second_token_id, second_token_balance from exchanges where confirmed=true");
       while (results.next()) {
-        String id = results.getString(1);
+        long id = results.getLong(1);
         String firstToken = results.getString(2);
         long firstBalance = results.getLong(3);
         String secondToken = results.getString(4);
@@ -137,7 +137,6 @@ public class TotalStatistics {
       e.printStackTrace();
     }
   }
-
 
   public void statistics() throws IOException {
     tokenIssued();

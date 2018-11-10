@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.UUID;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -449,6 +450,20 @@ public class Util {
               (importer.getCurrentExchangeID() + 1) + "")
               .source(builder);
           list.add(indexRequest);
+
+          XContentBuilder newExchangeBuilder = XContentFactory.jsonBuilder();
+          newExchangeBuilder.startObject();
+          newExchangeBuilder.field("id", (importer.getCurrentExchangeID() + 1));
+          newExchangeBuilder.field("first_token_id", exchangeCreateContract.getFirstTokenId().toStringUtf8());
+          newExchangeBuilder.field("first_token_balance", exchangeCreateContract.getFirstTokenBalance());
+          newExchangeBuilder.field("second_token_id", exchangeCreateContract.getSecondTokenId().toStringUtf8());
+          newExchangeBuilder.field("second_token_balance", exchangeCreateContract.getSecondTokenBalance());
+          newExchangeBuilder.field("date_created", transactionTime);
+          newExchangeBuilder.endObject();
+          IndexRequest newExchangeIndexRequest = new IndexRequest("exchange_start_price",
+              "exchange_start_price", (importer.getCurrentExchangeID() + 1) + "")
+              .source(newExchangeBuilder);
+          list.add(newExchangeIndexRequest);
           break;
 
         case ExchangeTransactionContract:
@@ -671,10 +686,16 @@ public class Util {
     }
   }
 
-  public static String getCurrentEpochTimeStamp(long timeStamp) throws Exception {
+  public static String getCurrentEpochTimeStamp(long timeStamp) {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     return sdf.format(new Date(timeStamp));
+  }
+
+  public static long getCurrentUTCTimeStamp(String utcTime) throws Exception {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    return sdf.parse(utcTime).getTime();
   }
 
 
@@ -1001,6 +1022,5 @@ public class Util {
     jsonTransaction.put("txID", txID);
     return jsonTransaction;
   }
-
 
 }

@@ -293,12 +293,12 @@ public class EsImporter {
     if (fullNodeNotForked) {
       long i = syncBlockFrom;
       while (i <= solidity) {
-        if (i + 100 <= solidity) {
-          BlockList blockList = WalletApi.getBlockByLimitNext(i, i + 100).get();
+        if (i + 50 <= solidity) {
+          BlockList blockList = WalletApi.getBlockByLimitNext(i, i + 50).get();
           for (Block block : sortList(blockList)) {
             parseBlock(block, false);
           }
-          i += 100;
+          i += 50;
         } else {
           BlockList blockList = WalletApi.getBlockByLimitNext(i, solidity + 1).get();
           for (Block block : sortList(blockList)) {
@@ -541,11 +541,13 @@ public class EsImporter {
       importer.init();
 
       Statistic statistic = new Statistic();
+      EveryDayStatistics everyDayStatistics = new EveryDayStatistics();
       UpdateAccount updateAccount = new UpdateAccount();
       TotalStatistics totalStatistics = new TotalStatistics();
       LoadTransactionInfo loadTransactionInfo = new LoadTransactionInfo();
 
       ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(20);
+
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
           System.out.println("sync data from block chain at:" + new Date());
@@ -599,6 +601,19 @@ public class EsImporter {
           e.printStackTrace();
         }
       }, WalletApi.hours * 60 * 60, 5, TimeUnit.SECONDS);
+
+
+      long oneDay = 24 * 60 * 60 * 1000;
+      long initDelay  = Util.getCurrentUTCTimeStamp("2018-11-11 00:00:00") - System.currentTimeMillis();
+      scheduledExecutorService.scheduleAtFixedRate(() -> {
+        try {
+          System.out.println("calculate exchange start price at:" + new Date());
+          everyDayStatistics.statistics();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, initDelay, oneDay, TimeUnit.MILLISECONDS);
+
 
     } catch (Exception e) {
       e.printStackTrace();
