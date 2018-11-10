@@ -374,6 +374,22 @@ public class EsImporter {
     }
   }
 
+  public boolean existExchangeStartPrice(long id) throws IOException {
+    Block block = WalletApi.getBlock4Loader(1, false);
+    boolean exist = false;
+    try {
+      Statement statement = connectionTool.getConn().createStatement();
+      ResultSet results = statement.executeQuery("select id from exchange_start_price where id=" + id);
+      while (results.next()) {
+        exist = true;
+      }
+    } catch (Exception e) {
+      exist = false;
+      e.printStackTrace();
+    }
+    return exist;
+  }
+
   public void resetDB() throws IOException {
     deleteIndex("blocks");
     deleteIndex("asset_issue_contract");

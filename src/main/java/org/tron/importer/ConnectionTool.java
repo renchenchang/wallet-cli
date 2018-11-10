@@ -3,7 +3,9 @@ package org.tron.importer;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Date;
 import java.util.Properties;
 import org.apache.http.HttpHost;
@@ -11,6 +13,8 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.tron.protos.Protocol.Block;
+import org.tron.walletserver.WalletApi;
 
 public class ConnectionTool {
   public RestHighLevelClient client;
@@ -49,4 +53,5 @@ public class ConnectionTool {
     blockBulk.requests().clear();
   //  System.out.println("after save,the number of actions is " + blockBulk.numberOfActions());
   }
+
 }
