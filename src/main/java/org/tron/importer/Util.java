@@ -708,9 +708,10 @@ public class Util {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     //sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-    int year = Calendar.getInstance(TimeZone.getTimeZone("UTC")).get(Calendar.YEAR);
-    int month = Calendar.getInstance(TimeZone.getTimeZone("UTC")).get(Calendar.MONTH);
-    int day = Calendar.getInstance(TimeZone.getTimeZone("UTC")).get(Calendar.DAY_OF_MONTH) + 1;
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    int year = calendar.get(Calendar.YEAR);
+    int month = calendar.get(Calendar.MONTH) + 1;
+    int day = calendar.get(Calendar.DAY_OF_MONTH) + 1;
 
     String daystr = year + "";
     if(month < 10) {
@@ -1058,7 +1059,9 @@ public class Util {
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println(getTomorrow());
+    System.out.println(Util.getTomorrow() - System.currentTimeMillis());
+    System.out.println(Util.getTomorrow());
+    System.out.println(System.currentTimeMillis());
   }
 
 }
