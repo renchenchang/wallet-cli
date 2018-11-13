@@ -9,6 +9,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -703,6 +704,28 @@ public class Util {
     return sdf.format(new Date(timeStamp));
   }
 
+  public static long getTomorrow() throws Exception {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    //sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    int year = Calendar.getInstance(TimeZone.getTimeZone("UTC")).get(Calendar.YEAR);
+    int month = Calendar.getInstance(TimeZone.getTimeZone("UTC")).get(Calendar.MONTH);
+    int day = Calendar.getInstance(TimeZone.getTimeZone("UTC")).get(Calendar.DAY_OF_MONTH) + 1;
+
+    String daystr = year + "";
+    if(month < 10) {
+      daystr += "-0" + month;
+    } else {
+      daystr += "-" + month;
+    }
+    if(day < 10) {
+      daystr += "-0" + day;
+    }else {
+      daystr += "-" + day;
+    }
+    return getCurrentUTCTimeStamp(daystr + " 00:00:00");
+  }
+
   public static long getCurrentUTCTimeStamp(String utcTime) throws Exception {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -1032,6 +1055,10 @@ public class Util {
     String txID = ByteArray.toHexString(Sha256Hash.hash(transaction.getRawData().toByteArray()));
     jsonTransaction.put("txID", txID);
     return jsonTransaction;
+  }
+
+  public static void main(String[] args) throws Exception {
+    System.out.println(getTomorrow());
   }
 
 }

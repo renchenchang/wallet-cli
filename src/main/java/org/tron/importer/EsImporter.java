@@ -639,7 +639,7 @@ public class EsImporter {
 
 
       long oneDay = 24 * 60 * 60 * 1000;
-      long initDelay  = Util.getCurrentUTCTimeStamp("2018-11-11 00:00:00") - System.currentTimeMillis();
+      long initDelay  = Util.getTomorrow() - System.currentTimeMillis();
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
           System.out.println("calculate exchange start price at:" + new Date());
