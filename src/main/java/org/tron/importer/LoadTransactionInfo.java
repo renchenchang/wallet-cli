@@ -20,8 +20,10 @@ public class LoadTransactionInfo {
   public void LoadData() {
     try {
       Statement statement = connectionTool.getConn().createStatement();
+      statement.setFetchSize(10000);
       ResultSet results = statement
           .executeQuery("select hash, owner_address from smart_contract_triggers where ((need_result is null) or need_result=1) and confirmed=true");
+      System.out.println("loading TransactionInfo, fetch size="+results.getFetchSize());
       while (results.next()) {
         String txid = results.getString(1);
         String owner = results.getString(2);

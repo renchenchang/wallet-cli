@@ -1,10 +1,12 @@
 package org.tron.importer;
 
 import com.alibaba.fastjson.JSONObject;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.tron.walletserver.WalletApi;
 
 public class DebugTool {
   private ConnectionTool connectionTool = new ConnectionTool();
@@ -39,7 +41,7 @@ public class DebugTool {
         long id = ids[i];
         UpdateRequest updateRequest = new UpdateRequest("exchanges", "exchanges", id + "");
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("checked", 0);
+        jsonObject.put("checked", 1);
         updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
         connectionTool.blockBulk.add(updateRequest);
       }
@@ -51,8 +53,8 @@ public class DebugTool {
     }
   }
 
-  public static void main(String[] args) {
-    DebugTool debugTool = new DebugTool();
-    debugTool.updateExchange(new long[]{7});
+  public static void main(String[] args) throws IOException {
+    EsImporter esImporter = new EsImporter();
+    esImporter.parseBlock(WalletApi.getBlock4Loader(4098522, false), false);
   }
 }

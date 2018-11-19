@@ -26,13 +26,13 @@ public class ConnectionTool {
     try {
       client = new RestHighLevelClient(
           RestClient.builder(
-              new HttpHost("18.223.114.116", 9200, "http")
+              new HttpHost(WalletApi.es, WalletApi.esPort, "http")
           ).setMaxRetryTimeoutMillis(90000000)
       );
       blockBulk.setRefreshPolicy("wait_for");
       blockBulk.timeout("2m");
       dbConnection = DriverManager
-          .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
+          .getConnection("jdbc:es://"+WalletApi.es+":" + WalletApi.esPort, connectionProperties);
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -41,7 +41,7 @@ public class ConnectionTool {
   public Connection getConn() throws SQLException {
     if (dbConnection.isClosed()) {
       dbConnection = DriverManager
-          .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
+          .getConnection("jdbc:es://" + WalletApi.es + ":" + WalletApi.esPort, connectionProperties);
     }
     return dbConnection;
   }

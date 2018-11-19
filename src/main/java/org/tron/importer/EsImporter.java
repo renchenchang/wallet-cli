@@ -35,6 +35,11 @@ import org.tron.walletserver.WalletApi;
 public class EsImporter {
 
   private ConnectionTool connectionTool = new ConnectionTool();
+  public long exchangeID;
+
+  public EsImporter() {
+    exchangeID = getCurrentExchangeID() + 1;
+  }
 
   public void init() throws IOException {
     CreateIndexRequest createBlockRequest = new CreateIndexRequest("blocks");
@@ -143,7 +148,6 @@ public class EsImporter {
     if (!connectionTool.client.indices().exists(getIndexRequest, RequestOptions.DEFAULT)) {
       connectionTool.client.indices().create(contractsRequest, RequestOptions.DEFAULT);
     }
-
   }
 
   private void parseTransactions(Block block, boolean full) throws IOException {
@@ -374,8 +378,7 @@ public class EsImporter {
     }
   }
 
-  public boolean existExchangeStartPrice(long id) throws IOException {
-    Block block = WalletApi.getBlock4Loader(1, false);
+  public boolean existExchangeStartPrice(long id) {
     boolean exist = false;
     try {
       Statement statement = connectionTool.getConn().createStatement();
@@ -544,7 +547,7 @@ public class EsImporter {
   public void deleteExchangesFrom(long from) {
     try {
       Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement.executeQuery("select id from exchanges where id>=" + from);
+      ResultSet results = statement.executeQuery("select id from exchanges where id=" + from);
       while (results.next()) {
         long id = results.getLong(1);
 
@@ -554,7 +557,9 @@ public class EsImporter {
           connectionTool.bulkSave();
         }
       }
-      connectionTool.bulkSave();
+      if(connectionTool.blockBulk.numberOfActions() > 0) {
+        connectionTool.bulkSave();
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -581,7 +586,7 @@ public class EsImporter {
       TotalStatistics totalStatistics = new TotalStatistics();
       LoadTransactionInfo loadTransactionInfo = new LoadTransactionInfo();
 
-      ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(20);
+      ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(30);
 
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
@@ -610,7 +615,7 @@ public class EsImporter {
         }
       }, WalletApi.hours * 60 * 60, 30, TimeUnit.SECONDS);
 
-      scheduledExecutorService.scheduleAtFixedRate(() -> {
+      scheduledExecutorService.scheduleWithFixedDelay(() -> {
         try {
           System.out.println("update accounts at:" + new Date());
           updateAccount.UpdateAccounts();
@@ -626,9 +631,9 @@ public class EsImporter {
         } catch (Exception e) {
           e.printStackTrace();
         }
-      }, WalletApi.hours * 60 * 60, 5, TimeUnit.SECONDS);
+      }, WalletApi.hours * 60 * 60, 10, TimeUnit.SECONDS);
 
-      scheduledExecutorService.scheduleAtFixedRate(() -> {
+      scheduledExecutorService.scheduleWithFixedDelay(() -> {
         try {
           System.out.println("load transactionInfo at:" + new Date());
           loadTransactionInfo.LoadData();

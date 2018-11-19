@@ -71,6 +71,8 @@ public class Util {
   public static HashMap<String, Long> address = new HashMap<>();
   public static EsImporter importer = new EsImporter();
   public static ConnectionTool connectionTool = new ConnectionTool();
+  public static Object lock = new Object();
+
 
 //  public static List<UpdateRequest> getAddressBuilder(long time) throws IOException {
 //    ArrayList<UpdateRequest> list = new ArrayList<>();
@@ -103,23 +105,23 @@ public class Util {
   }
 
   public static void syncAddress() throws IOException {
-    synchronized (address) {
+    synchronized (lock) {
       System.out.println("syncing address");
       for (Entry<String, Long> stringLongEntry : address.entrySet()) {
-        String address = stringLongEntry.getKey();
+        String address1 = stringLongEntry.getKey();
         long time = stringLongEntry.getValue();
        // System.out.println("sync address " + address);
         XContentBuilder builder = XContentFactory.jsonBuilder();
         builder.startObject();
-        builder.field("address", address);
+        builder.field("address", address1);
         builder.field("date_created", time);
         builder.field("need_update", 1);
         builder.endObject();
-        IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
+        IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address1)
             .source(builder);
 
         UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
-            address);
+            address1);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("need_update", 1);
         updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
@@ -134,7 +136,7 @@ public class Util {
   }
 
   public static void addAddress(String owner, ArrayList<String> to, long time) {
-    synchronized (address) {
+    synchronized (lock) {
       if (!address.containsKey(owner)) {
         address.put(owner, time);
       }
@@ -200,6 +202,7 @@ public class Util {
           request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
+          /*
         case ExchangeWithdrawContract:
           ExchangeWithdrawContract exchangeWithdrawContract = contract.getParameter()
               .unpack(ExchangeWithdrawContract.class);
@@ -248,6 +251,7 @@ public class Util {
           request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
+          */
 
         case UpdateSettingContract:
           UpdateSettingContract updateSettingContract = contract.getParameter()
@@ -435,7 +439,8 @@ public class Util {
 
         case ExchangeCreateContract:
           if(!full) {
-            long id = importer.getCurrentExchangeID() + 1;
+            long id = importer.exchangeID;
+            importer.exchangeID ++;
             ExchangeCreateContract exchangeCreateContract =
                 contract.getParameter().unpack(ExchangeCreateContract.class);
             builder.field("owner_address", owner);

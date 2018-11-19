@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import org.tron.walletserver.WalletApi;
 
 public class CoinDay {
   private static Properties connectionProperties = new Properties();
@@ -14,7 +15,7 @@ public class CoinDay {
   private static Connection getConn() throws SQLException {
     if (dbConnection==null || dbConnection.isClosed()) {
       dbConnection = DriverManager
-          .getConnection("jdbc:es://18.223.114.116:9200", connectionProperties);
+          .getConnection("jdbc:es://"+ WalletApi.es + ":" + WalletApi.esPort, connectionProperties);
     }
     return dbConnection;
   }

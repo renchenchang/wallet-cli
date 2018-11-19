@@ -20,6 +20,7 @@ public class UpdateAccount {
   public void UpdateAccounts() {
     try {
       Statement statement = connectionTool.getConn().createStatement();
+      statement.setFetchSize(5000);
       ResultSet results = statement
           .executeQuery("select address from accounts where need_update=1");
       while (results.next()) {
@@ -31,7 +32,7 @@ public class UpdateAccount {
         jsonObject.put("need_update", 0);
         updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
         connectionTool.blockBulk.add(updateRequest);
-        if (connectionTool.blockBulk.numberOfActions() >= 500) {
+        if (connectionTool.blockBulk.numberOfActions() >= 1000) {
           connectionTool.bulkSave();
         }
       }
