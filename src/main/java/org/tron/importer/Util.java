@@ -68,34 +68,12 @@ import org.tron.walletserver.WalletApi;
 
 public class Util {
 
-  public static HashMap<String, Long> address = new HashMap<>();
-  public static EsImporter importer = new EsImporter();
-  public static ConnectionTool connectionTool = new ConnectionTool();
-  public static Object lock = new Object();
+  public HashMap<String, Long> address = new HashMap<>();
+  private ConnectionTool connectionTool = new ConnectionTool();
+  private Object lock = new Object();
+  private long exchangeID = connectionTool.getCurrentExchangeID() + 1;
 
-
-//  public static List<UpdateRequest> getAddressBuilder(long time) throws IOException {
-//    ArrayList<UpdateRequest> list = new ArrayList<>();
-//    for(String address : addressSet) {
-//      XContentBuilder builder = XContentFactory.jsonBuilder();
-//      builder.startObject();
-//      builder.field("address", address);
-//      builder.field("date_created", time);
-//      builder.endObject();
-//      IndexRequest indexRequest = new IndexRequest("accounts", "accounts", address)
-//          .source(builder);
-//
-//      UpdateRequest updateRequest = new UpdateRequest("accounts", "accounts",
-//          address);
-//      updateRequest.doc("{\"date_updated\" : \"" + time + "\"}", XContentType.JSON);
-//      updateRequest.upsert(indexRequest);
-//      list.add(updateRequest);
-//    }
-//    addressSet.clear();
-//    return list;
-//  }
-
-  public static long getTimeInMillionSecond(long time) {
+  public long getTimeInMillionSecond(long time) {
     String sTime = time + "";
     if (sTime.length() > 13) {
       return Long.parseLong(sTime.substring(0,13));
@@ -104,7 +82,7 @@ public class Util {
     }
   }
 
-  public static void syncAddress() throws IOException {
+  public void syncAddress() throws IOException {
     synchronized (lock) {
       System.out.println("syncing address");
       for (Entry<String, Long> stringLongEntry : address.entrySet()) {
@@ -135,7 +113,7 @@ public class Util {
     }
   }
 
-  public static void addAddress(String owner, ArrayList<String> to, long time) {
+  public void addAddress(String owner, ArrayList<String> to, long time) {
     synchronized (lock) {
       if (!address.containsKey(owner)) {
         address.put(owner, time);
@@ -148,7 +126,7 @@ public class Util {
     }
   }
 
-  public static List<UpdateRequest> getUpdateBuilder(Block block, Transaction transaction, boolean full)
+  public List<UpdateRequest> getUpdateBuilder(Block block, Transaction transaction, boolean full)
       throws IOException {
     List<UpdateRequest> list = new ArrayList<>();
     Transaction.Contract contract = transaction.getRawData().getContract(0);
@@ -184,24 +162,24 @@ public class Util {
           request.doc(jsonObject.toJSONString(), XContentType.JSON);
           list.add(request);
           break;
-        case ProposalApproveContract:
-          ProposalApproveContract proposalApproveContract = contract.getParameter()
-              .unpack(ProposalApproveContract.class);
-          request = new UpdateRequest("proposals", "proposals", proposalApproveContract.getProposalId() + "");
-          jsonObject = new JSONObject();
-          if (proposalApproveContract.getIsAddApproval()) {
-            String approved = importer
-                .getProposalApprovedList(proposalApproveContract.getProposalId());
-            if (approved.equals("")) {
-              approved = owner;
-            } else {
-              approved = approved + ";" + owner;
-            }
-            jsonObject.put("approved", approved);
-          }
-          request.doc(jsonObject.toJSONString(), XContentType.JSON);
-          list.add(request);
-          break;
+//        case ProposalApproveContract:
+//          ProposalApproveContract proposalApproveContract = contract.getParameter()
+//              .unpack(ProposalApproveContract.class);
+//          request = new UpdateRequest("proposals", "proposals", proposalApproveContract.getProposalId() + "");
+//          jsonObject = new JSONObject();
+//          if (proposalApproveContract.getIsAddApproval()) {
+//            String approved = importer
+//                .getProposalApprovedList(proposalApproveContract.getProposalId());
+//            if (approved.equals("")) {
+//              approved = owner;
+//            } else {
+//              approved = approved + ";" + owner;
+//            }
+//            jsonObject.put("approved", approved);
+//          }
+//          request.doc(jsonObject.toJSONString(), XContentType.JSON);
+//          list.add(request);
+//          break;
           /*
         case ExchangeWithdrawContract:
           ExchangeWithdrawContract exchangeWithdrawContract = contract.getParameter()
@@ -274,7 +252,7 @@ public class Util {
     }
   }
 
-  public static byte[] generateContractAddress(Transaction trx) {
+  public byte[] generateContractAddress(Transaction trx) {
 
     CreateSmartContract contract = ContractCapsule.getSmartContractFromTransaction(trx);
     byte[] ownerAddress = contract.getOwnerAddress().toByteArray();
@@ -289,7 +267,7 @@ public class Util {
 
   }
 
-  public static List<IndexRequest> getIndexBuilder(Block block, Transaction transaction,
+  public List<IndexRequest> getIndexBuilder(Block block, Transaction transaction,
       boolean full) throws IOException {
     List<IndexRequest> list = new ArrayList<>();
     Transaction.Contract contract = transaction.getRawData().getContract(0);
@@ -419,28 +397,28 @@ public class Util {
           }
           break;
 
-        case ProposalCreateContract:
-          ProposalCreateContract proposalCreateContract =
-              contract.getParameter().unpack(ProposalCreateContract.class);
-          builder.field("owner_address", owner);
-          builder.field("block", block.getBlockHeader().getRawData().getNumber());
-          builder.field("hash", getTxID(transaction));
-          builder.field("date_created", transactionTime);
-          builder.field("parameters", JsonFormat.printToString(proposalCreateContract));
-          builder.field("approved", "");
-          builder.field("id", (importer.getCurrentProposalID() + 1));
-          builder.field("confirmed", !full);
-          builder.endObject();
-          indexRequest = new IndexRequest("proposals", "proposals",
-              (importer.getCurrentProposalID() + 1) + "")
-              .source(builder);
-          list.add(indexRequest);
-          break;
+//        case ProposalCreateContract:
+//          ProposalCreateContract proposalCreateContract =
+//              contract.getParameter().unpack(ProposalCreateContract.class);
+//          builder.field("owner_address", owner);
+//          builder.field("block", block.getBlockHeader().getRawData().getNumber());
+//          builder.field("hash", getTxID(transaction));
+//          builder.field("date_created", transactionTime);
+//          builder.field("parameters", JsonFormat.printToString(proposalCreateContract));
+//          builder.field("approved", "");
+//          builder.field("id", (importer.getCurrentProposalID() + 1));
+//          builder.field("confirmed", !full);
+//          builder.endObject();
+//          indexRequest = new IndexRequest("proposals", "proposals",
+//              (importer.getCurrentProposalID() + 1) + "")
+//              .source(builder);
+//          list.add(indexRequest);
+//          break;
 
         case ExchangeCreateContract:
           if(!full) {
-            long id = importer.exchangeID;
-            importer.exchangeID ++;
+            long id = exchangeID;
+            exchangeID ++;
             ExchangeCreateContract exchangeCreateContract =
                 contract.getParameter().unpack(ExchangeCreateContract.class);
             builder.field("owner_address", owner);
@@ -460,7 +438,7 @@ public class Util {
                 .source(builder);
             list.add(indexRequest);
 
-            if (!importer.existExchangeStartPrice(id)) {
+            if (!connectionTool.existExchangeStartPrice(id)) {
               XContentBuilder newExchangeBuilder = XContentFactory.jsonBuilder();
               newExchangeBuilder.startObject();
               newExchangeBuilder.field("id", id);

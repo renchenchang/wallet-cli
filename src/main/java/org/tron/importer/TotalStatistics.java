@@ -116,44 +116,44 @@ public class TotalStatistics {
     exchangePrice();
   }
 
-  public void exchanges() {
-    try {
-      Optional<ExchangeList> exchanges = WalletApi.listExchanges();
-      if (exchanges.isPresent()) {
-        for (Exchange exchange : exchanges.get().getExchangesList()) {
-
-          long id = exchange.getExchangeId();
-          String firstToken = exchange.getFirstTokenId().toStringUtf8();
-          long firstBalance = exchange.getFirstTokenBalance();
-          String secondToken = exchange.getSecondTokenId().toStringUtf8();
-          long secondBalance = exchange.getSecondTokenBalance();
-          XContentBuilder builder = XContentFactory.jsonBuilder();
-          builder.startObject();
-          builder.field("owner_address", "owner_address");
-          builder.field("block", 0);
-          builder.field("hash", "hash");
-          builder.field("date_created", 0);
-          builder
-              .field("first_token_id", firstToken);
-          builder.field("first_token_balance", firstBalance);
-          builder
-              .field("second_token_id", secondToken);
-          builder.field("second_token_balance", secondBalance);
-          builder.field("id", id);
-          builder.field("confirmed", true);
-          builder.endObject();
-          IndexRequest indexRequest = new IndexRequest("exchanges", "exchanges", id + "")
-              .source(builder);
-
-
-          connectionTool.blockBulk.add(indexRequest);
-        }
-      }
-      connectionTool.bulkSave();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
+//  public void exchanges() {
+//    try {
+//      Optional<ExchangeList> exchanges = WalletApi.listExchanges();
+//      if (exchanges.isPresent()) {
+//        for (Exchange exchange : exchanges.get().getExchangesList()) {
+//
+//          long id = exchange.getExchangeId();
+//          String firstToken = exchange.getFirstTokenId().toStringUtf8();
+//          long firstBalance = exchange.getFirstTokenBalance();
+//          String secondToken = exchange.getSecondTokenId().toStringUtf8();
+//          long secondBalance = exchange.getSecondTokenBalance();
+//          XContentBuilder builder = XContentFactory.jsonBuilder();
+//          builder.startObject();
+//          builder.field("owner_address", "owner_address");
+//          builder.field("block", 0);
+//          builder.field("hash", "hash");
+//          builder.field("date_created", 0);
+//          builder
+//              .field("first_token_id", firstToken);
+//          builder.field("first_token_balance", firstBalance);
+//          builder
+//              .field("second_token_id", secondToken);
+//          builder.field("second_token_balance", secondBalance);
+//          builder.field("id", id);
+//          builder.field("confirmed", true);
+//          builder.endObject();
+//          IndexRequest indexRequest = new IndexRequest("exchanges", "exchanges", id + "")
+//              .source(builder);
+//
+//
+//          connectionTool.blockBulk.add(indexRequest);
+//        }
+//      }
+//      connectionTool.bulkSave();
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//    }
+//  }
 
   public void exchangePrice() {
     try {

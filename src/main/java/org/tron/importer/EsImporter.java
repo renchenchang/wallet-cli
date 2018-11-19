@@ -35,11 +35,7 @@ import org.tron.walletserver.WalletApi;
 public class EsImporter {
 
   private ConnectionTool connectionTool = new ConnectionTool();
-  public long exchangeID;
-
-  public EsImporter() {
-    exchangeID = getCurrentExchangeID() + 1;
-  }
+  public Util util = new Util();
 
   public void init() throws IOException {
     CreateIndexRequest createBlockRequest = new CreateIndexRequest("blocks");
@@ -172,14 +168,14 @@ public class EsImporter {
           .source(builder);
       connectionTool.blockBulk.add(indexRequest);
 
-      List<UpdateRequest> updateList = Util.getUpdateBuilder(block, transaction, full);
+      List<UpdateRequest> updateList = util.getUpdateBuilder(block, transaction, full);
       if (updateList != null) {
         for (UpdateRequest updateRequest : updateList) {
           connectionTool.blockBulk.add(updateRequest);
         }
       }
 
-      List<IndexRequest> indexList = Util.getIndexBuilder(block, transaction, full);
+      List<IndexRequest> indexList = util.getIndexBuilder(block, transaction, full);
       if (indexList != null) {
         for (IndexRequest request : indexList) {
           connectionTool.blockBulk.add(request);
@@ -275,19 +271,19 @@ public class EsImporter {
     checkIsSameChain();
 
     //check whether the chain forked or not
-    long blockInDB = getCurrentBlockNumberInDB();
-    String blockHashInDB = getCurrentBlockHashInDB(blockInDB);
+    long blockInDB = connectionTool.getCurrentBlockNumberInDB();
+    String blockHashInDB = connectionTool.getCurrentBlockHashInDB(blockInDB);
     Block checkDBForkedBlock = WalletApi.getBlock4Loader(blockInDB, false);
     while (blockInDB > 0 && checkDBForkedBlock.getSerializedSize() > 0
         && !Util.getBlockID(checkDBForkedBlock).equalsIgnoreCase(blockHashInDB)) {
       //if forked, delete forked blocks in db
       deleteForkedBlock(blockHashInDB);
-      blockInDB = getCurrentBlockNumberInDB();
-      blockHashInDB = getCurrentBlockHashInDB(blockInDB);
+      blockInDB = connectionTool.getCurrentBlockNumberInDB();
+      blockHashInDB = connectionTool.getCurrentBlockHashInDB(blockInDB);
     }
 
     //sync data from solidity
-    long syncBlockFrom = getCurrentConfirmedBlockNumberInDB() + 1;
+    long syncBlockFrom = connectionTool.getCurrentConfirmedBlockNumberInDB() + 1;
     Block blockInSolidity = getCurrentBlockInSolidity();
     long solidity = blockInSolidity.getBlockHeader().getRawData().getNumber();
     Block checkFullNodeForkedBlock = WalletApi.getBlock4Loader(solidity, true);
@@ -327,7 +323,7 @@ public class EsImporter {
 
     //sync data from full node
     long fullNode = getCurrentBlockInFull().getBlockHeader().getRawData().getNumber();
-    long currentBlockInDB = getCurrentBlockNumberInDB();
+    long currentBlockInDB = connectionTool.getCurrentBlockNumberInDB();
     if (fullNode > solidity) {
       if (fullNodeNotForked) {
         for (long j = currentBlockInDB + 1; j <= fullNode; j++) {
@@ -378,21 +374,6 @@ public class EsImporter {
     }
   }
 
-  public boolean existExchangeStartPrice(long id) {
-    boolean exist = false;
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement.executeQuery("select id from exchange_start_price where id=" + id);
-      while (results.next()) {
-        exist = true;
-      }
-    } catch (Exception e) {
-      exist = false;
-      e.printStackTrace();
-    }
-    return exist;
-  }
-
   public void resetDB() throws IOException {
     deleteIndex("blocks");
     deleteIndex("asset_issue_contract");
@@ -420,113 +401,13 @@ public class EsImporter {
     deleteIndex("transaction_info");
   }
 
-  public long getCurrentExchangeID() {
-    long number = 0;
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement
-          .executeQuery("select max(id) from exchanges");
-      while (results.next()) {
-        number = results.getLong(1);
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return number;
-  }
 
-  public boolean containAddress(String address) {
-    boolean contain = false;
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement
-          .executeQuery("select * from accounts where address='" + address + "'");
-      if (results.next()) {
-        contain = true;
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return contain;
-  }
-
-  public long getCurrentProposalID() {
-    long number = 0;
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement
-          .executeQuery("select max(id) from proposals");
-      while (results.next()) {
-        number = results.getLong(1);
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return number;
-  }
-
-  public String getProposalApprovedList(long id) {
-    String approved = "";
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement
-          .executeQuery("select approved from proposals where id=" + id);
-      while (results.next()) {
-        approved = results.getString(1);
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return approved;
-  }
-
-  private long getCurrentConfirmedBlockNumberInDB() {
-    long number = 0;
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement
-          .executeQuery("select max(number) from blocks where confirmed=true");
-      while (results.next()) {
-        number = results.getLong(1);
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return number;
-  }
-
-  private long getCurrentBlockNumberInDB() {
-    long number = 0;
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement.executeQuery("select max(number) from blocks");
-      while (results.next()) {
-        number = results.getLong(1);
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return number;
-  }
-
-  private String getCurrentBlockHashInDB(long number) {
-    String hash = "";
-    try {
-      Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement.executeQuery("select hash from blocks where number=" + number);
-      while (results.next()) {
-        hash = results.getString(1);
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return hash;
-  }
 
   public void deleteBlocksFrom(long from) {
     try {
-      String hash = "";
+      String hash;
       Statement statement = connectionTool.getConn().createStatement();
+      statement.setFetchSize(10000);
       ResultSet results = statement.executeQuery("select hash, number from blocks where number>=" + from);
       while (results.next()) {
         long number = results.getLong(2);
@@ -547,7 +428,7 @@ public class EsImporter {
   public void deleteExchangesFrom(long from) {
     try {
       Statement statement = connectionTool.getConn().createStatement();
-      ResultSet results = statement.executeQuery("select id from exchanges where id=" + from);
+      ResultSet results = statement.executeQuery("select id from exchanges where id>=" + from);
       while (results.next()) {
         long id = results.getLong(1);
 
@@ -600,7 +481,7 @@ public class EsImporter {
       scheduledExecutorService.scheduleAtFixedRate(() -> {
         try {
           System.out.println("sync address from block chain at:" + new Date());
-          Util.syncAddress();
+          importer.util.syncAddress();
         } catch (Exception e) {
           e.printStackTrace();
         }

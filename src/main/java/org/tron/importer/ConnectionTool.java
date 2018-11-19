@@ -54,4 +54,124 @@ public class ConnectionTool {
   //  System.out.println("after save,the number of actions is " + blockBulk.numberOfActions());
   }
 
+
+  public long getCurrentExchangeID() {
+    long number = 0;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select max(id) from exchanges");
+      while (results.next()) {
+        number = results.getLong(1);
+      }
+    } catch (Exception e) {
+      number = 0;
+      e.printStackTrace();
+    }
+    return number;
+  }
+
+  public boolean containAddress(String address) {
+    boolean contain = false;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select * from accounts where address='" + address + "'");
+      if (results.next()) {
+        contain = true;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return contain;
+  }
+
+  public long getCurrentProposalID() {
+    long number = 0;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select max(id) from proposals");
+      while (results.next()) {
+        number = results.getLong(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return number;
+  }
+
+  public String getProposalApprovedList(long id) {
+    String approved = "";
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select approved from proposals where id=" + id);
+      while (results.next()) {
+        approved = results.getString(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return approved;
+  }
+
+  public long getCurrentConfirmedBlockNumberInDB() {
+    long number = 0;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select max(number) from blocks where confirmed=true");
+      while (results.next()) {
+        number = results.getLong(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return number;
+  }
+
+  public long getCurrentBlockNumberInDB() {
+    long number = 0;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement.executeQuery("select max(number) from blocks");
+      while (results.next()) {
+        number = results.getLong(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return number;
+  }
+
+  public String getCurrentBlockHashInDB(long number) {
+    String hash = "";
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement.executeQuery("select hash from blocks where number=" + number);
+      while (results.next()) {
+        hash = results.getString(1);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return hash;
+  }
+
+  public boolean existExchangeStartPrice(long id) {
+    boolean exist = false;
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement.executeQuery("select id from exchange_start_price where id=" + id);
+      while (results.next()) {
+        exist = true;
+      }
+    } catch (Exception e) {
+      exist = false;
+      e.printStackTrace();
+    }
+    return exist;
+  }
+
 }
