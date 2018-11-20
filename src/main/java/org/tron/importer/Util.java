@@ -126,6 +126,19 @@ public class Util {
     }
   }
 
+  public String updateExchange(long exchangeID) {
+    Optional<Exchange> exchangeOptional = WalletApi.getExchange(Long.toString(exchangeID));
+    JSONObject jsonObject = new JSONObject();
+    if (exchangeOptional.isPresent()) {
+      Exchange exchange = exchangeOptional.get();
+      jsonObject.put("first_token_id", exchange.getFirstTokenId().toStringUtf8());
+      jsonObject.put("first_token_balance", exchange.getFirstTokenBalance());
+      jsonObject.put("second_token_id", exchange.getSecondTokenId().toStringUtf8());
+      jsonObject.put("second_token_balance", exchange.getSecondTokenBalance());
+    }
+    return jsonObject.toJSONString();
+  }
+
   public List<UpdateRequest> getUpdateBuilder(Block block, Transaction transaction, boolean full)
       throws IOException {
     List<UpdateRequest> list = new ArrayList<>();
@@ -180,56 +193,31 @@ public class Util {
 //          request.doc(jsonObject.toJSONString(), XContentType.JSON);
 //          list.add(request);
 //          break;
-          /*
+
         case ExchangeWithdrawContract:
           ExchangeWithdrawContract exchangeWithdrawContract = contract.getParameter()
               .unpack(ExchangeWithdrawContract.class);
-          request = new UpdateRequest("exchanges", "exchanges", exchangeWithdrawContract.getExchangeId() + "");
-          jsonObject = new JSONObject();
-          Optional<Exchange> exchangeOptional = WalletApi.getExchange(exchangeWithdrawContract.getExchangeId() + "");
-          if (exchangeOptional.isPresent()) {
-            Exchange exchange = exchangeOptional.get();
-            jsonObject.put("first_token_id", exchange.getFirstTokenId().toStringUtf8());
-            jsonObject.put("first_token_balance", exchange.getFirstTokenBalance());
-            jsonObject.put("second_token_id", exchange.getSecondTokenId().toStringUtf8());
-            jsonObject.put("second_token_balance", exchange.getSecondTokenBalance());
-          }
-          request.doc(jsonObject.toJSONString(), XContentType.JSON);
-          list.add(request);
+          UpdateRequest request1 = new UpdateRequest("exchanges", "exchanges", exchangeWithdrawContract.getExchangeId() + "");
+
+          request1.doc(updateExchange(exchangeWithdrawContract.getExchangeId()), XContentType.JSON);
+          list.add(request1);
           break;
         case ExchangeTransactionContract:
           ExchangeTransactionContract exchangeTransactionContract = contract.getParameter()
               .unpack(ExchangeTransactionContract.class);
-          request = new UpdateRequest("exchanges", "exchanges", exchangeTransactionContract.getExchangeId() + "");
-          jsonObject = new JSONObject();
-          exchangeOptional = WalletApi.getExchange(exchangeTransactionContract.getExchangeId() + "");
-          if (exchangeOptional.isPresent()) {
-            Exchange exchange = exchangeOptional.get();
-            jsonObject.put("first_token_id", exchange.getFirstTokenId().toStringUtf8());
-            jsonObject.put("first_token_balance", exchange.getFirstTokenBalance());
-            jsonObject.put("second_token_id", exchange.getSecondTokenId().toStringUtf8());
-            jsonObject.put("second_token_balance", exchange.getSecondTokenBalance());
-          }
-          request.doc(jsonObject.toJSONString(), XContentType.JSON);
-          list.add(request);
+          UpdateRequest request2 = new UpdateRequest("exchanges", "exchanges", exchangeTransactionContract.getExchangeId() + "");
+
+          request2.doc(updateExchange(exchangeTransactionContract.getExchangeId()), XContentType.JSON);
+          list.add(request2);
           break;
         case ExchangeInjectContract:
           ExchangeInjectContract exchangeInjectContract = contract.getParameter()
               .unpack(ExchangeInjectContract.class);
-          request = new UpdateRequest("exchanges", "exchanges", exchangeInjectContract.getExchangeId() + "");
-          jsonObject = new JSONObject();
-          exchangeOptional = WalletApi.getExchange(exchangeInjectContract.getExchangeId() + "");
-          if (exchangeOptional.isPresent()) {
-            Exchange exchange = exchangeOptional.get();
-            jsonObject.put("first_token_id", exchange.getFirstTokenId().toStringUtf8());
-            jsonObject.put("first_token_balance", exchange.getFirstTokenBalance());
-            jsonObject.put("second_token_id", exchange.getSecondTokenId().toStringUtf8());
-            jsonObject.put("second_token_balance", exchange.getSecondTokenBalance());
-          }
-          request.doc(jsonObject.toJSONString(), XContentType.JSON);
-          list.add(request);
+          UpdateRequest request3 = new UpdateRequest("exchanges", "exchanges", exchangeInjectContract.getExchangeId() + "");
+
+          request3.doc(updateExchange(exchangeInjectContract.getExchangeId()), XContentType.JSON);
+          list.add(request3);
           break;
-          */
 
         case UpdateSettingContract:
           UpdateSettingContract updateSettingContract = contract.getParameter()
