@@ -430,7 +430,7 @@ public class WalletApi {
         break;
       }
       if (weight.getResult().getCode() == response_code.NOT_ENOUGH_PERMISSION) {
-        System.out.println(Utils.printTransactionSignWeight(weight));
+     //   System.out.println(Utils.printTransactionSignWeight(weight));
         System.out.println("Please confirm if continue add signature enter y or Y, else any other");
         if (!confirm()) {
           throw new CancelException("User cancelled");

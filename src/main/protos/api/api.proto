@@ -595,7 +595,6 @@ service Wallet {
     };
   }
 
-<<<<<<< HEAD
   rpc AccountPermissionUpdate (AccountPermissionUpdateContract) returns (TransactionExtention) {
 
   }
@@ -619,11 +618,9 @@ service Wallet {
   rpc GetTransactionSignWeight (Transaction) returns (TransactionSignWeight) {
 
   }
-=======
+
   rpc GetNodeInfo (EmptyMessage) returns (NodeInfo) {
   };
-
->>>>>>> master
 };
 
 

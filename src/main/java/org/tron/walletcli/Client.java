@@ -1871,29 +1871,13 @@ public class Client {
 //    System.out.println("buyStorage");
 //    System.out.println("buyStorageBytes");
 //    System.out.println("sellStorage");
-<<<<<<< HEAD
-    System.out.println("CreateProposal");
-    System.out.println("ListProposals");
-    System.out.println("GetProposal");
-    System.out.println("ApproveProposal");
-    System.out.println("DeleteProposal");
-    System.out.println("ExchangeCreate");
-    System.out.println("ExchangeInject");
-    System.out.println("ExchangeWithdraw");
-    System.out.println("ExchangeTransaction");
-    System.out.println("ListExchanges");
-    System.out.println("GetExchange");
-    System.out.println("UpdateAccountPermission");
-    System.out.println("permissionAddKey");
-    System.out.println("permissionUpdateKey");
-    System.out.println("permissionDeleteKey");
-=======
+
 //   System.out.println("GetAssetIssueListByTimestamp");
 //   System.out.println("GetTransactionsByTimestamp");
 //   System.out.println("GetTransactionsByTimestampCount");
 //   System.out.println("GetTransactionsFromThisCount");
 //   System.out.println("GetTransactionsToThisCount");
->>>>>>> master
+
     System.out.println("Exit or Quit");
 
     System.out.println("Input any one of the listed commands, to display how-to tips.");
