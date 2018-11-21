@@ -10,7 +10,7 @@ public class AccountController {
 
   @GetMapping("/api/account")
   public String getAccount(String address) {
-    String url = "http://18.223.114.116:9200/accounts/accounts/_search?q=address:" + address;
+    String url = "http://174.129.76.237:9200/accounts/accounts/_search?q=address:" + address;
     String result = Http.doGet(url, "utf-8", 5);
 
     return result;
