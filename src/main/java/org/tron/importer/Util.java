@@ -232,7 +232,6 @@ public class Util {
           break;
 
         default:
-          return null;
       }
       return list;
     } catch (Exception e) {
@@ -692,7 +691,7 @@ public class Util {
     }
     if(day < 10) {
       daystr += "-0" + day;
-    }else {
+    } else {
       daystr += "-" + day;
     }
     return getCurrentUTCTimeStamp(daystr + " 00:00:00");
