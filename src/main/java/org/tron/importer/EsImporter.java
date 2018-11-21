@@ -466,6 +466,7 @@ public class EsImporter {
       UpdateAccount updateAccount = new UpdateAccount();
       TotalStatistics totalStatistics = new TotalStatistics();
       LoadTransactionInfo loadTransactionInfo = new LoadTransactionInfo();
+      Exchange exchange = new Exchange();
 
       ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(30);
 
@@ -513,6 +514,15 @@ public class EsImporter {
           e.printStackTrace();
         }
       }, WalletApi.hours * 60 * 60, 10, TimeUnit.SECONDS);
+
+      scheduledExecutorService.scheduleAtFixedRate(() -> {
+        try {
+          System.out.println("statistic exchange price at:" + new Date());
+          exchange.exchangePrice();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, WalletApi.hours * 60 * 60, 60, TimeUnit.SECONDS);
 
       scheduledExecutorService.scheduleWithFixedDelay(() -> {
         try {
