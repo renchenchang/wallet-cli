@@ -332,14 +332,7 @@ public class GrpcClient {
     BytesMessage request = BytesMessage.newBuilder().setValue(ByteString.copyFrom(
         ByteArray.fromLong(Long.parseLong(id))))
         .build();
-
-    Exchange exchange;
-    if (blockingStubSolidity != null) {
-      exchange = blockingStubSolidity.getExchangeById(request);
-    } else {
-      exchange = blockingStubFull.getExchangeById(request);
-    }
-
+    Exchange exchange = blockingStubFull.getExchangeById(request);
     return Optional.ofNullable(exchange);
   }
 

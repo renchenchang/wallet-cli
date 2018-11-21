@@ -55,6 +55,8 @@ public class DebugTool {
 
   public static void main(String[] args) throws IOException {
     DebugTool tool = new DebugTool();
+    EsImporter importer = new EsImporter();
+    importer.parseBlock(WalletApi.getBlock4Loader(4277090, false), false);
 //    tool.updateExchange(new long[]{11});
  //   EsImporter esImporter = new EsImporter();
    // esImporter.parseBlock(WalletApi.getBlock4Loader(4098522, false), false);
