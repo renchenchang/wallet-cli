@@ -68,8 +68,8 @@ public class ConnectionTool {
       int i = 0;
       while (results.next()) {
         i++;
-        if(i%2 == 10000) {
-          System.out.println("server is loading Exchange price History");
+        if(i%10000 == 0) {
+          System.out.println("server is loading Exchange price History, i=" + i);
         }
         if(i%2 == 0) {
           continue;

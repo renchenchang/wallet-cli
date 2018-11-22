@@ -2,10 +2,8 @@ package org.tron.http;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import javax.servlet.http.HttpServlet;

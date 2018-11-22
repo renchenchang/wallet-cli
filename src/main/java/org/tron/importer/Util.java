@@ -7,6 +7,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -726,6 +727,16 @@ public class Util {
     return sdf.parse(utcTime).getTime();
   }
 
+  public static String hexToAscii(String hexStr) {
+    StringBuilder output = new StringBuilder("");
+
+    for (int i = 0; i < hexStr.length(); i += 2) {
+      String str = hexStr.substring(i, i + 2);
+      output.append((char) Integer.parseInt(str, 16));
+    }
+
+    return output.toString();
+  }
 
   public static byte[] getOwner(Transaction.Contract contract) {
     ByteString owner;
@@ -1056,6 +1067,8 @@ public class Util {
     System.out.println(Util.getTomorrow());
     System.out.println(Util.getYestorday());
     System.out.println(System.currentTimeMillis());
+
+    System.out.println(hexToAscii("54524f4e30303031"));
   }
 
 }
