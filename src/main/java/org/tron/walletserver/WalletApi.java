@@ -105,6 +105,7 @@ public class WalletApi {
   public static int hours = 0;
   public static String es = "";
   public static int esPort = 0;
+  public static int httpPort = 0;
 
   private static GrpcClient rpcCli = init();
 
@@ -147,6 +148,9 @@ public class WalletApi {
     }
     if (config.hasPath("esport")) {
       esPort = config.getInt("esport");
+    }
+    if (config.hasPath("http_port")) {
+      httpPort = config.getInt("http_port");
     }
     return new GrpcClient(fullNode, solidityNode);
   }
