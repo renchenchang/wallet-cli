@@ -7,7 +7,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 public class HttpApp {
 
   public static void main(String[] args) throws Exception {
-    Server server = new Server(8085);
+    Server server = new Server(8095);
     ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
     context.setContextPath("/exchanges/");
     server.setHandler(context);
@@ -19,6 +19,7 @@ public class HttpApp {
     ServletHolder exchangeHistoryHolder = new ServletHolder(new GetExchangeHistoryServlet());
     exchangeHistoryHolder.setInitOrder(2);
     context.addServlet(exchangeHistoryHolder, "/history");
+
 
     server.start();
     server.join();

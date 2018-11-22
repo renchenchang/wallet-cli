@@ -36,6 +36,7 @@ public class GetExchangeHistoryServlet extends HttpServlet {
   }
 
   private void updateExchangeHistory() {
+    int maxLen = 700;
     for (Exchange exchange : WalletApi.listExchanges().get().getExchangesList()) {
       JSONArray list = new JSONArray();
       String id = Long.toString(exchange.getExchangeId());
@@ -49,12 +50,18 @@ public class GetExchangeHistoryServlet extends HttpServlet {
       json.put("second_token_balance",  exchange.getSecondTokenBalance());
       json.put("date_created", System.currentTimeMillis());
       list.add(json);
-      priceHistory.put(id, list);
+      JSONArray newList = new JSONArray();
+      if (list.size() > maxLen) {
+        for (int i=maxLen; i >=0; i--) {
+          newList.add(list.get(list.size() - i - 1));
+        }
+      } else {
+        newList = list;
+      }
+      priceHistory.put(id, newList);
     }
     System.out.println("exchange history updated at " + new Date());
   }
-
-
 
   @Override
   public void init() {
@@ -67,6 +74,6 @@ public class GetExchangeHistoryServlet extends HttpServlet {
       public void run() {
         updateExchangeHistory();
       }
-    }, 600000, 60000);
+    }, 120000, 120000);
   }
 }

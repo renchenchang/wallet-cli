@@ -64,8 +64,16 @@ public class ConnectionTool {
       Statement statement = getConn().createStatement();
       ResultSet results = statement
           .executeQuery("select id, date_created, first_token_id, first_token_balance, second_token_id, second_token_balance "
-              + "from exchange_prices where date_created>" + start + " order by date_created ASC");
+              + "from exchange_prices where date_created>" + start + " order by id ASC, date_created ASC");
+      int i = 0;
       while (results.next()) {
+        i++;
+        if(i%2 == 10000) {
+          System.out.println("server is loading Exchange price History");
+        }
+        if(i%2 == 0) {
+          continue;
+        }
         long id = results.getLong(1);
         long time = results.getLong(2);
         String firstToken = results.getString(3);
