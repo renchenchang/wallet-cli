@@ -375,6 +375,7 @@ public class EsImporter {
   }
 
   public void resetDB() throws IOException {
+
     deleteIndex("blocks");
     deleteIndex("asset_issue_contract");
     deleteIndex("participate_asset_issue");
@@ -399,6 +400,8 @@ public class EsImporter {
     deleteIndex("exchange_transactions");
     deleteIndex("exchanges");
     deleteIndex("transaction_info");
+    deleteIndex("exchange_prices");
+    deleteIndex("exchange_start_price");
   }
 
 
