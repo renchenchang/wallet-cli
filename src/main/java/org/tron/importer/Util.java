@@ -697,6 +697,29 @@ public class Util {
     return getCurrentUTCTimeStamp(daystr + " 00:00:00");
   }
 
+  public static long getYestorday() throws Exception {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    //sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    int year = calendar.get(Calendar.YEAR);
+    int month = calendar.get(Calendar.MONTH) + 1;
+    int day = calendar.get(Calendar.DAY_OF_MONTH) - 1;
+
+    String daystr = year + "";
+    if(month < 10) {
+      daystr += "-0" + month;
+    } else {
+      daystr += "-" + month;
+    }
+    if(day < 10) {
+      daystr += "-0" + day;
+    } else {
+      daystr += "-" + day;
+    }
+    return getCurrentUTCTimeStamp(daystr + " 00:00:00");
+  }
+
   public static long getCurrentUTCTimeStamp(String utcTime) throws Exception {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -1031,6 +1054,7 @@ public class Util {
   public static void main(String[] args) throws Exception {
     System.out.println(Util.getTomorrow() - System.currentTimeMillis());
     System.out.println(Util.getTomorrow());
+    System.out.println(Util.getYestorday());
     System.out.println(System.currentTimeMillis());
   }
 

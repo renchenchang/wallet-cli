@@ -318,13 +318,7 @@ public class GrpcClient {
 
 
   public Optional<ExchangeList> listExchanges() {
-    ExchangeList exchangeList;
-    if (blockingStubSolidity != null) {
-      exchangeList = blockingStubSolidity.listExchanges(EmptyMessage.newBuilder().build());
-    } else {
-      exchangeList = blockingStubFull.listExchanges(EmptyMessage.newBuilder().build());
-    }
-
+    ExchangeList exchangeList = blockingStubFull.listExchanges(EmptyMessage.newBuilder().build());
     return Optional.ofNullable(exchangeList);
   }
 

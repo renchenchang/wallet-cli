@@ -68,8 +68,14 @@ buildscript {
     }
 }
 
+
+
 task wrapper(type: Wrapper) {
     gradleVersion = '3.3'
+}
+
+configurations {
+    providedRuntime
 }
 
 dependencies {
@@ -101,22 +107,10 @@ dependencies {
     compile 'com.alibaba:fastjson:1.2.47'
     compile files('/Users/renchengchang/libs/x-pack-sql-jdbc-6.4.0.jar')
 
-    compile 'com.alibaba:fastjson:1.2.47'
 
+    compile 'org.eclipse.jetty:jetty-server:9.4.11.v20180605'
+    compile 'org.eclipse.jetty:jetty-servlet:9.4.11.v20180605'
 
-    compile 'org.projectlombok:lombok:1.16.6'
-    compile "org.springframework.boot:spring-boot-configuration-processor:${springBootVersion}"
-    compile "org.springframework.boot:spring-boot-starter:${springBootVersion}"
-    compile "org.springframework.cloud:spring-cloud-starter-sleuth:${springSleuthVersion}"
-    compile "org.springframework.cloud:spring-cloud-starter-consul-discovery:${springCloudConsulVersion}"
-    compile "org.springframework.cloud:spring-cloud-starter-eureka:${springCloudEurekaVersion}"
-    compile "org.apache.commons:commons-collections4:4.0"
-    compile "org.apache.commons:commons-lang3:3.4"
-
-  
-    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0'
-    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0'
-    compile group: 'org.springframework.boot', name: 'spring-boot-devtools', version: '1.5.6.RELEASE'
 }
 
 protobuf {

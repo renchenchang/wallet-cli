@@ -1,12 +1,16 @@
 package org.tron.importer;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Properties;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -54,6 +58,38 @@ public class ConnectionTool {
   //  System.out.println("after save,the number of actions is " + blockBulk.numberOfActions());
   }
 
+  public HashMap<String, JSONArray> getExchangeHistory(long start) {
+    HashMap<String, JSONArray> priceHistory = new HashMap<>();
+    try {
+      Statement statement = getConn().createStatement();
+      ResultSet results = statement
+          .executeQuery("select id, date_created, first_token_id, first_token_balance, second_token_id, second_token_balance "
+              + "from exchange_prices where date_created>" + start + " order by date_created ASC");
+      while (results.next()) {
+        long id = results.getLong(1);
+        long time = results.getLong(2);
+        String firstToken = results.getString(3);
+        long firstBalance = results.getLong(4);
+        String secondToken = results.getString(5);
+        long secondBalance = results.getLong(6);
+        JSONArray list = new JSONArray();
+        if (priceHistory.containsKey(Long.toString(id))) {
+          list = priceHistory.get(Long.toString(id));
+        }
+        JSONObject json = new JSONObject();
+        json.put("first_token_id", firstToken);
+        json.put("first_token_balance", firstBalance);
+        json.put("second_token_id", secondToken);
+        json.put("second_token_balance", secondBalance);
+        json.put("date_created", time);
+        list.add(json);
+        priceHistory.put(Long.toString(id), list);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return priceHistory;
+  }
 
   public long getCurrentExchangeID() {
     long number = 0;
