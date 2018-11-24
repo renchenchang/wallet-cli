@@ -35,29 +35,29 @@ public class DebugTool {
     }
   }
 
-//  public void updateExchange(long[] ids) {
-//    try {
-//      for (int i=0; i<ids.length; i++) {
-//        long id = ids[i];
-//        UpdateRequest updateRequest = new UpdateRequest("exchanges", "exchanges", id + "");
-//        JSONObject jsonObject = new JSONObject();
-//        jsonObject.put("checked", 1);
-//        updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
-//        connectionTool.blockBulk.add(updateRequest);
-//      }
-//      if (connectionTool.blockBulk.numberOfActions() > 0) {
-//        connectionTool.bulkSave();
-//      }
-//    } catch (Exception e) {
-//      e.printStackTrace();
-//    }
-//  }
+  public void updateExchange(long[] ids) {
+    try {
+      for (int i=0; i<ids.length; i++) {
+        long id = ids[i];
+        UpdateRequest updateRequest = new UpdateRequest("exchanges", "exchanges", id + "");
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("checked", 1);
+        updateRequest.doc(jsonObject.toJSONString(), XContentType.JSON);
+        connectionTool.blockBulk.add(updateRequest);
+      }
+      if (connectionTool.blockBulk.numberOfActions() > 0) {
+        connectionTool.bulkSave();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 
   public static void main(String[] args) throws IOException {
     DebugTool tool = new DebugTool();
-    EsImporter importer = new EsImporter();
-    importer.parseBlock(WalletApi.getBlock4Loader(4277090, false), false);
-//    tool.updateExchange(new long[]{11});
+//    EsImporter importer = new EsImporter();
+//    importer.parseBlock(WalletApi.getBlock4Loader(4277090, false), false);
+    tool.updateExchange(new long[]{11});
  //   EsImporter esImporter = new EsImporter();
    // esImporter.parseBlock(WalletApi.getBlock4Loader(4098522, false), false);
   }

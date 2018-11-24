@@ -23,7 +23,17 @@ public class GetExchangeHistoryServlet extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response) {
     try {
       String exchangeID = request.getParameter("id");
-      response.getWriter().println(priceHistory.get(exchangeID));
+      JSONArray array = priceHistory.get(exchangeID);
+      int size = array.size();
+      if (request.getParameter("size") != null) {
+        size = Integer.parseInt(request.getParameter("size"));
+      }
+      int start = (size > array.size()) ? 0 : (array.size() - size);
+      JSONArray reply = new JSONArray();
+      for (int i= start; i<array.size(); i++) {
+        reply.add(array.getJSONObject(i));
+      }
+      response.getWriter().println(reply.toJSONString());
     } catch (Exception e) {
 
     }
@@ -64,7 +74,8 @@ public class GetExchangeHistoryServlet extends HttpServlet {
   @Override
   public void init() {
     try {
-      priceHistory = connectionTool.getExchangeHistory(Util.getYestorday());
+      priceHistory = connectionTool.getExchangeHistory(System.currentTimeMillis()
+          - 24 * 60 * 60 * 1000);
     } catch (Exception e) {
       e.printStackTrace();
     }

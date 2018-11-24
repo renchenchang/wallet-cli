@@ -55,8 +55,10 @@ public class Exchange {
   public void exchangePrice() {
     try {
       Statement statement = connectionTool.getConn().createStatement();
+      statement.setFetchSize(10000);
       ResultSet results = statement
-          .executeQuery("select id, first_token_id, first_token_balance, second_token_id, second_token_balance from exchanges where confirmed=true");
+          .executeQuery("select id, first_token_id, first_token_balance, second_token_id, second_token_balance "
+              + "from exchanges where confirmed=true");
       while (results.next()) {
         long id = results.getLong(1);
         String firstToken = results.getString(2);
@@ -83,5 +85,10 @@ public class Exchange {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  public static void main(String[] args) {
+    Exchange exchange = new Exchange();
+    exchange.exchangePrice();
   }
 }

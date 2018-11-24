@@ -62,36 +62,47 @@ public class ConnectionTool {
     HashMap<String, JSONArray> priceHistory = new HashMap<>();
     try {
       Statement statement = getConn().createStatement();
-      ResultSet results = statement
-          .executeQuery("select id, date_created, first_token_id, first_token_balance, second_token_id, second_token_balance "
-              + "from exchange_prices where date_created>" + start + " order by id ASC, date_created ASC");
-      int i = 0;
-      while (results.next()) {
-        i++;
-        if(i%10000 == 0) {
-          System.out.println("server is loading Exchange price History, i=" + i);
+      statement.setFetchSize(10000);
+      long maxID = 0;
+      ResultSet exchangeResults = statement
+          .executeQuery("select max(id) from exchanges");
+      while (exchangeResults.next()) {
+        maxID = exchangeResults.getInt(1);
+      }
+
+      for (long id = 1; id <= maxID; id++) {
+        ResultSet results = statement
+            .executeQuery(
+                "select id, date_created, first_token_id, first_token_balance, second_token_id, second_token_balance "
+                    + "from exchange_prices where id="+ id +" and date_created>" + start
+                    + " order by date_created ASC");
+        int i = 0;
+        while (results.next()) {
+          i++;
+          if (i % 10000 == 0) {
+            System.out.println("server is loading Exchange price History, i=" + i);
+          }
+          if (i % 2 == 0) {
+            continue;
+          }
+          long time = results.getLong(2);
+          String firstToken = results.getString(3);
+          long firstBalance = results.getLong(4);
+          String secondToken = results.getString(5);
+          long secondBalance = results.getLong(6);
+          JSONArray list = new JSONArray();
+          if (priceHistory.containsKey(Long.toString(id))) {
+            list = priceHistory.get(Long.toString(id));
+          }
+          JSONObject json = new JSONObject();
+          json.put("first_token_id", firstToken);
+          json.put("first_token_balance", firstBalance);
+          json.put("second_token_id", secondToken);
+          json.put("second_token_balance", secondBalance);
+          json.put("date_created", time);
+          list.add(json);
+          priceHistory.put(Long.toString(id), list);
         }
-        if(i%2 == 0) {
-          continue;
-        }
-        long id = results.getLong(1);
-        long time = results.getLong(2);
-        String firstToken = results.getString(3);
-        long firstBalance = results.getLong(4);
-        String secondToken = results.getString(5);
-        long secondBalance = results.getLong(6);
-        JSONArray list = new JSONArray();
-        if (priceHistory.containsKey(Long.toString(id))) {
-          list = priceHistory.get(Long.toString(id));
-        }
-        JSONObject json = new JSONObject();
-        json.put("first_token_id", firstToken);
-        json.put("first_token_balance", firstBalance);
-        json.put("second_token_id", secondToken);
-        json.put("second_token_balance", secondBalance);
-        json.put("date_created", time);
-        list.add(json);
-        priceHistory.put(Long.toString(id), list);
       }
     } catch (Exception e) {
       e.printStackTrace();
